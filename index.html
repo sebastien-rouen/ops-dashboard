@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPS Command Center</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <link rel="stylesheet" href="css/main.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+    <div class="loader-content">
+        <div class="spinner"></div>
+        <span>Initialisation OPS Dashboard…</span>
+    </div>
+</div>
+
+<!-- PRIVACY BANNER -->
+<div id="privacyBanner" class="privacy-banner">
+    🔒 100% local — Toutes les données restent dans votre navigateur (localStorage). Rien n'est envoyé.
+    <button onclick="dismissBanner()" class="banner-close">✕</button>
+</div>
+
+<!-- HEADER -->
+<header>
+    <div class="header-top">
+        <div class="header-left">
+            <h1>⚡ OPS Command Center</h1>
+            <div id="trafficLightWidget" class="traffic-light-widget" onclick="openTrafficLightSettings()"></div>
+            <div id="envIndicators" class="env-indicators"></div>
+        </div>
+        <div class="header-right">
+            <div class="header-actions-group">
+                <button class="btn btn-icon" onclick="openApiConfig()" title="Endpoints API">🔌</button>
+                <button class="btn btn-icon" onclick="openDashboardSettings()" title="Paramètres d'affichage (s)">⚙️</button>
+                <button class="btn btn-icon" onclick="toggleCompactMode()" title="Mode compact (c)">📐</button>
+                <button class="btn btn-icon" onclick="toggleTheme()" title="Thème">🌓</button>
+                <button class="btn btn-icon" onclick="toggleShortcutsHelp()" title="Raccourcis (?)">⌨️</button>
+            </div>
+            <span class="header-sep"></span>
+            <div class="header-actions-group">
+                <div class="demo-dropdown-wrap">
+                    <button class="btn btn-secondary btn-small" onclick="toggleDemoMenu()" title="Données de démonstration">🧪 Démo ▾</button>
+                    <div class="demo-dropdown" id="demoDropdown">
+                        <button onclick="loadDemoIncident()">🔴 Scénario incident</button>
+                        <button onclick="loadDemoGreen()">🟢 Scénario nominal</button>
+                        <button onclick="resetBoard()">🗑️ Remettre à zéro</button>
+                    </div>
+                </div>
+                <button class="btn btn-export" onclick="openExportModal()" title="Rédiger un communiqué OPS (Markdown / Slack)">📝 Rédiger</button>
+            </div>
+        </div>
+    </div>
+    <!-- IMPACTS / PROD ALERT (dans le header) -->
+    <div class="header-impacts" data-views="ops reseau" data-settings-id="header-impacts">
+        <div id="prodAlertBanner" class="prod-alert-banner" style="display:none;"></div>
+        <div id="impactsTickerWrap" class="impacts-ticker-wrap">
+            <div id="impactsList" class="impacts-strip"></div>
+        </div>
+        <div id="noImpacts" class="impacts-nominal">✅ Situation nominale</div>
+        <button class="btn-add-impact" onclick="openImpactModal()" title="Déclarer un impact">+</button>
+    </div>
+</header>
+
+<!-- PAGE BORDER (prod alert) -->
+<div id="prodBorderOverlay" class="prod-border-overlay"></div>
+
+<!-- STICKY BAR: TOOLBAR -->
+<div class="sticky-bar">
+<nav class="toolbar">
+    <div class="toolbar-inner">
+        <div class="view-tabs-inline">
+            <button class="view-tab active" data-view="ops" onclick="switchView('ops', this)">🎯 Ops</button>
+            <button class="view-tab" data-view="reseau" onclick="switchView('reseau', this)">🌐 Réseau</button>
+            <button class="view-tab" data-view="apps" onclick="switchView('apps', this)">📋 Apps</button>
+        </div>
+        <div class="toolbar-filters">
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="globalSearch" placeholder="Recherche..." oninput="applyAdvancedFilters()">
+                <button class="search-clear" id="searchClear" onclick="clearGlobalSearch()" style="display:none">✕</button>
+            </div>
+            <div class="filter-dropdowns">
+                <select id="filterType" onchange="applyAdvancedFilters()">
+                    <option value="">Tous types</option>
+                    <option value="vm">VM</option>
+                    <option value="lxc">LXC</option>
+                    <option value="stack">Stack</option>
+                    <option value="logger">Logger</option>
+                    <option value="other">Autre</option>
+                </select>
+                <select id="filterStatus" onchange="applyAdvancedFilters()">
+                    <option value="">Tous statuts</option>
+                    <optgroup label="Infrastructure">
+                        <option value="up">🟢 Up</option>
+                        <option value="degraded">🟡 Dégradé</option>
+                        <option value="down">🔴 Down</option>
+                    </optgroup>
+                    <optgroup label="Tâches">
+                        <option value="todo">📌 À faire</option>
+                        <option value="wip">🔧 En cours</option>
+                        <option value="done">✅ Terminé</option>
+                    </optgroup>
+                </select>
+                <select id="filterEnv" onchange="applyAdvancedFilters()">
+                    <option value="">Tous env.</option>
+                    <option value="dev">DEV</option>
+                    <option value="preprod">PREPROD</option>
+                    <option value="prod">PROD</option>
+                </select>
+                <input type="text" id="filterTags" placeholder="Tags..." oninput="applyAdvancedFilters()">
+            </div>
+            <div class="filter-info">
+                <span id="filterResults"></span>
+                <button class="btn-clear-filters" id="btnClearFilters" onclick="clearAllFilters()" style="display:none">✕ Reset</button>
+            </div>
+        </div>
+    </div>
+</nav>
+</div>
+
+<main>
+
+    <!-- METRICS -->
+    <section class="metrics-bar" data-views="ops reseau apps">
+        <!-- Groupe : Activite -->
+        <div class="metrics-group">
+            <div class="metrics-group-label">Activit&eacute;</div>
+            <div class="metric-card metric-card-todo metric-clickable" onclick="openMetricDetail('todo')" title="Voir les tâches à faire" data-settings-id="metric-todo">
+                <div class="metric-icon">📌</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricTodo">0</div>
+                    <div class="metric-label">Tâches à faire</div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-wip metric-clickable" onclick="openMetricDetail('wip')" title="Voir les tâches en cours" data-settings-id="metric-wip">
+                <div class="metric-icon">🔧</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricWip">0</div>
+                    <div class="metric-label">Tâches en cours</div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-done metric-clickable" onclick="openMetricDetail('done')" title="Voir les tâches terminées" data-settings-id="metric-done">
+                <div class="metric-icon">✅</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricDone">0</div>
+                    <div class="metric-label">Tâches terminées</div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-accent" data-settings-id="metric-completion">
+                <div class="metric-icon">🎯</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricCompletion">0%</div>
+                    <div class="metric-label">Complétion globale</div>
+                    <div class="metric-progress">
+                        <div class="metric-progress-bar" id="progressCompletion"></div>
+                    </div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+        </div>
+
+        <!-- Groupe : Disponibilite -->
+        <div class="metrics-group">
+            <div class="metrics-group-label">Disponibilit&eacute;</div>
+            <div class="metric-card metric-card-infra metric-clickable" onclick="openMetricDetail('infra')" title="Voir le détail infrastructure" data-settings-id="metric-infra">
+                <div class="metric-icon">🖥️</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricInfra">0</div>
+                    <div class="metric-label">Infra items</div>
+                    <div class="metric-mini-summary" id="metricInfraSummary"></div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-success metric-clickable" onclick="openMetricDetail('uptime')" title="Voir la disponibilité par machine" data-settings-id="metric-uptime">
+                <div class="metric-icon">💚</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricUptime">0%</div>
+                    <div class="metric-label">Infra disponible</div>
+                    <div class="metric-progress">
+                        <div class="metric-progress-bar" id="progressUptime"></div>
+                    </div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-warning metric-clickable" onclick="openMetricDetail('impacts')" title="Voir les impacts actifs" data-settings-id="metric-impacts">
+                <div class="metric-icon">🔴</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricImpacts">0</div>
+                    <div class="metric-label">Impacts actifs</div>
+                    <div class="metric-mini-summary" id="metricImpactsSummary"></div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-info metric-clickable" onclick="openMetricDetail('resolved')" title="Voir les impacts résolus" data-settings-id="metric-resolved">
+                <div class="metric-icon">✓</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricResolved">0</div>
+                    <div class="metric-label">Impacts résolus</div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+        </div>
+
+        <!-- Groupe : CI/CD -->
+        <div class="metrics-group">
+            <div class="metrics-group-label">CI / CD</div>
+            <div class="metric-card metric-card-gitlab metric-clickable" onclick="openGitlabDetail()" title="Merge Requests ouvertes sur master" data-settings-id="metric-gitlab">
+                <div class="metric-icon">🦊</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricGitlabMR">—</div>
+                    <div class="metric-label">MR ouvertes</div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-gitlab metric-clickable" onclick="openGitlabPipelinesDetail()" title="Pipelines CI/CD" data-settings-id="metric-gitlab-pipelines">
+                <div class="metric-icon">🚀</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricGitlabPipelines">—</div>
+                    <div class="metric-label">Pipelines</div>
+                    <div class="metric-mini-summary" id="metricGitlabPipelinesSummary"></div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-gitlab metric-clickable" onclick="openGitlabCommitsDetail()" title="Commits récents GitLab" data-settings-id="metric-gitlab-commits">
+                <div class="metric-icon">📝</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricGitlabCommits">—</div>
+                    <div class="metric-label">Commits GL (7j)</div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-github metric-clickable" onclick="openGithubPRDetail()" title="Pull Requests GitHub ouvertes" data-settings-id="metric-github-pr">
+                <div class="metric-icon">🐙</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricGithubPR">—</div>
+                    <div class="metric-label">PR GitHub</div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-github metric-clickable" onclick="openGithubActionsDetail()" title="GitHub Actions" data-settings-id="metric-github-actions">
+                <div class="metric-icon">⚡</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricGithubActions">—</div>
+                    <div class="metric-label">Actions</div>
+                    <div class="metric-mini-summary" id="metricGithubActionsSummary"></div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-github metric-clickable" onclick="openGithubCommitsDetail()" title="Commits récents GitHub" data-settings-id="metric-github-commits">
+                <div class="metric-icon">📝</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricGithubCommits">—</div>
+                    <div class="metric-label">Commits GH (7j)</div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+        </div>
+
+        <!-- Groupe : Monitoring -->
+        <div class="metrics-group">
+            <div class="metrics-group-label">Monitoring</div>
+            <div class="metric-card metric-card-sre metric-clickable" onclick="openMTTRDetail()" title="Temps moyen de rétablissement (impacts résolus)" data-settings-id="metric-mttr" data-views="ops reseau apps">
+                <div class="metric-icon">⏱️</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricMTTR">—</div>
+                    <div class="metric-label">MTTR</div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-sre metric-clickable" onclick="openDeployFrequencyDetail()" title="Fréquence de déploiement (commits/jour sur 7j)" data-settings-id="metric-deploy-freq" data-views="ops reseau apps">
+                <div class="metric-icon">🚀</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricDeployFreq">—</div>
+                    <div class="metric-label">Déploiements/j</div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-sre metric-clickable" onclick="openChangeFailureRateDetail()" title="Taux d'échec des changements (pipelines/actions)" data-settings-id="metric-cfr" data-views="ops reseau apps">
+                <div class="metric-icon">📉</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricCFR">—</div>
+                    <div class="metric-label">Change Failure</div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-consul metric-clickable" onclick="openConsulDetail()" title="Services & Nodes Consul" data-settings-id="metric-consul">
+                <div class="metric-icon">🟢</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricConsul">—</div>
+                    <div class="metric-label">Consul services</div>
+                    <div class="metric-mini-summary" id="metricConsulSummary"></div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-ansible metric-clickable" onclick="openAnsibleDetail()" title="Playbooks Ansible" data-settings-id="metric-ansible">
+                <div class="metric-icon">🅰️</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricAnsible">—</div>
+                    <div class="metric-label">Ansible runs</div>
+                    <div class="metric-mini-summary" id="metricAnsibleSummary"></div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-openstack metric-clickable" onclick="openOpenstackDetail()" title="Instances & Volumes OpenStack" data-settings-id="metric-openstack">
+                <div class="metric-icon">☁️</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricOpenstack">—</div>
+                    <div class="metric-label">OpenStack</div>
+                    <div class="metric-mini-summary" id="metricOpenstackSummary"></div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CHARTS -->
+    <section class="charts-grid" id="chartsGrid" data-views="ops reseau apps">
+        <button class="charts-layout-toggle" id="chartsLayoutToggle" onclick="toggleChartsLayout()" title="Changer la disposition"></button>
+        <div class="chart-container" data-views="ops apps" data-settings-id="chart-activity">
+            <h3>📈 Activité Kanban (7 jours)</h3>
+            <div class="chart-wrap">
+                <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-container" data-views="ops apps" data-settings-id="chart-priority">
+            <h3>🎯 Distribution des priorités Kanban</h3>
+            <div class="chart-wrap chart-wrap-doughnut">
+                <canvas id="priorityChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-container" data-views="ops reseau" data-settings-id="chart-infrastatus">
+            <h3>🖥️ Statut Infrastructure</h3>
+            <div class="chart-wrap chart-wrap-doughnut">
+                <canvas id="infraStatusChart"></canvas>
+            </div>
+            <div id="infraStatusLegend" class="infra-status-legend"></div>
+        </div>
+        <div class="chart-container" data-views="ops reseau" data-settings-id="chart-timeline">
+            <h3>📊 Timeline impacts (7j)</h3>
+            <div class="chart-wrap">
+                <canvas id="impactsTimelineChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-container" data-views="ops reseau apps" data-settings-id="chart-trafficlight">
+            <h3>🚦 Historique Traffic Light (30j)</h3>
+            <div class="chart-wrap">
+                <canvas id="trafficLightChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-container chart-container-wide" data-views="ops reseau apps" data-settings-id="chart-pricing">
+            <h3>💰 Coût par requête selon l'infrastructure</h3>
+            <div class="pricing-chart-controls">
+                <div class="pricing-controls-row">
+                    <button class="pricing-view-btn active" data-pricing-view="cumulative" onclick="switchPricingView('cumulative')">Coût cumulé</button>
+                    <button class="pricing-view-btn" data-pricing-view="unitaire" onclick="switchPricingView('unitaire')">Coût unitaire</button>
+                </div>
+                <div class="pricing-duration-row">
+                    <span class="pricing-duration-label">Projection :</span>
+                    <button class="pricing-dur-btn active" data-dur="1" onclick="switchPricingDuration(1, this)">1 jour</button>
+                    <button class="pricing-dur-btn" data-dur="7" onclick="switchPricingDuration(7, this)">7j</button>
+                    <button class="pricing-dur-btn" data-dur="14" onclick="switchPricingDuration(14, this)">14j</button>
+                    <button class="pricing-dur-btn" data-dur="30" onclick="switchPricingDuration(30, this)">1 mois</button>
+                    <button class="pricing-dur-btn" data-dur="90" onclick="switchPricingDuration(90, this)">3 mois</button>
+                    <button class="pricing-dur-btn" data-dur="180" onclick="switchPricingDuration(180, this)">6 mois</button>
+                    <button class="pricing-dur-btn" data-dur="365" onclick="switchPricingDuration(365, this)">1 an</button>
+                </div>
+            </div>
+            <div class="chart-wrap chart-wrap-pricing">
+                <canvas id="pricingChart"></canvas>
+            </div>
+            <div id="pricingChartLegend" class="pricing-legend"></div>
+            <div class="pricing-insight" id="pricingInsight"></div>
+        </div>
+        <div class="chart-container chart-container-wide" data-views="ops reseau apps" data-settings-id="chart-downtime">
+            <h3>💸 Coût d'indisponibilité</h3>
+            <div class="downtime-controls">
+                <span class="downtime-controls-label">Taux €/min :</span>
+                <label class="downtime-rate-field">
+                    <span class="downtime-rate-dot" style="background:var(--red)"></span>
+                    Critical
+                    <input type="number" id="rateCritical" value="50" min="0" step="1" onchange="updateDowntimeCostChart()">
+                </label>
+                <label class="downtime-rate-field">
+                    <span class="downtime-rate-dot" style="background:var(--orange)"></span>
+                    Major
+                    <input type="number" id="rateMajor" value="20" min="0" step="1" onchange="updateDowntimeCostChart()">
+                </label>
+                <label class="downtime-rate-field">
+                    <span class="downtime-rate-dot" style="background:var(--yellow)"></span>
+                    Warning
+                    <input type="number" id="rateWarning" value="5" min="0" step="1" onchange="updateDowntimeCostChart()">
+                </label>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="downtimeCostChart"></canvas>
+            </div>
+            <div class="downtime-insight" id="downtimeInsight"></div>
+        </div>
+        <div class="chart-row-dual" data-views="ops reseau" data-settings-id="chart-ansible">
+            <div class="chart-container chart-container-half">
+                <h3>🤖 Ansible — Jobs</h3>
+                <div class="chart-wrap chart-wrap-doughnut"><canvas id="ansibleJobsChart"></canvas></div>
+                <div id="ansibleJobsLegend" class="infra-status-legend"></div>
+            </div>
+            <div class="chart-container chart-container-half">
+                <h3>🤖 Ansible — Taux succès</h3>
+                <div class="chart-wrap chart-wrap-doughnut"><canvas id="ansibleRateChart"></canvas></div>
+                <div id="ansibleRateLegend" class="infra-status-legend"></div>
+            </div>
+        </div>
+        <div class="chart-row-dual" data-views="ops reseau" data-settings-id="chart-openstack">
+            <div class="chart-container chart-container-half">
+                <h3>☁️ OpenStack — Instances</h3>
+                <div class="chart-wrap chart-wrap-doughnut"><canvas id="openstackInstancesChart"></canvas></div>
+                <div id="openstackInstancesLegend" class="infra-status-legend"></div>
+            </div>
+            <div class="chart-container chart-container-half">
+                <h3>☁️ OpenStack — Volumes</h3>
+                <div class="chart-wrap chart-wrap-doughnut"><canvas id="openstackVolumesChart"></canvas></div>
+                <div id="openstackVolumesLegend" class="infra-status-legend"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- INFRA -->
+    <section class="section-infra" data-views="ops reseau" data-settings-id="section-infra">
+        <div class="section-header">
+            <h2>🖥️ Infrastructure</h2>
+            <div class="header-actions">
+                <button class="btn btn-small btn-secondary infra-group-toggle" id="infraGroupToggle" onclick="toggleInfraGrouping()" title="Changer le regroupement"></button>
+                <button class="btn btn-small btn-secondary" onclick="openImportSourcesModal()">📡 Sources</button>
+                <button class="btn btn-small btn-secondary" onclick="openPasteModal()">📋 Coller en masse</button>
+                <button class="btn btn-small btn-primary" onclick="openInfraModal()">+ Ajouter</button>
+            </div>
+        </div>
+        <div id="infraGrid" class="infra-grid"></div>
+        <div id="noInfra" class="empty-state">Aucun élément d'infrastructure enregistré</div>
+    </section>
+
+    <!-- KANBAN -->
+    <section class="section-kanban" data-views="ops apps" data-settings-id="section-kanban">
+        <div class="section-header">
+            <h2>📋 Kanban OPS</h2>
+            <div class="header-actions">
+                <button class="btn btn-small btn-secondary" id="kanbanViewToggle" onclick="toggleKanbanView()" title="Basculer la vue"></button>
+                <button class="btn btn-small btn-primary" onclick="openTaskModal()">+ Tâche</button>
+            </div>
+        </div>
+        <div id="kanbanContainer">
+        </div>
+    </section>
+
+    <!-- IMPACT HISTORY -->
+    <section class="section-history" data-views="ops reseau" data-settings-id="section-history">
+        <div class="section-header">
+            <h2>📜 Historique impacts</h2>
+            <button class="btn btn-small btn-secondary" onclick="clearResolvedImpacts()">🗑 Purger</button>
+        </div>
+        <div id="historyList" class="history-list"></div>
+        <div id="noHistory" class="empty-state">Aucun impact résolu</div>
+    </section>
+
+    <!-- LOG -->
+    <section class="section-log" data-views="ops" data-settings-id="section-log">
+        <div class="section-header">
+            <h2>📝 Journal d'événements</h2>
+            <button class="btn btn-small btn-secondary" onclick="clearLog()">🗑 Vider</button>
+        </div>
+        <div id="logEntries" class="log-entries"></div>
+    </section>
+
+</main>
+
+<!-- MODAL: Impact -->
+<div class="modal-overlay" id="modalImpact">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>🔴 Déclarer un impact</h3>
+            <button class="btn-close" onclick="closeModal('modalImpact')">✕</button>
+        </div>
+        <div class="modal-body">
+            <label>Titre *</label>
+            <input type="text" id="impactTitle" placeholder="Ex: Perte connectivité DC-2">
+            <label>Sévérité</label>
+            <select id="impactSeverity">
+                <option value="warning">⚠️ Warning</option>
+                <option value="major">🔶 Major</option>
+                <option value="critical">🔴 Critical</option>
+            </select>
+            <label>Origine</label>
+            <select id="impactOrigin">
+                <option value="external">🌐 Externe</option>
+                <option value="internal">🏠 Interne</option>
+            </select>
+            <label>Description</label>
+            <textarea id="impactDesc" rows="3" placeholder="Détails, périmètre, actions…"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalImpact')">Annuler</button>
+            <button class="btn btn-danger" onclick="saveImpact()">Déclarer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Task -->
+<div class="modal-overlay" id="modalTask">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="taskModalTitle">📋 Nouvelle tâche</h3>
+            <button class="btn-close" onclick="closeModal('modalTask')">✕</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="taskEditId" value="">
+            <label>Titre *</label>
+            <input type="text" id="taskTitle" placeholder="Ex: Migrer Redis vers cluster">
+            <label>Description</label>
+            <textarea id="taskDesc" rows="2" placeholder="Détails…"></textarea>
+            <label>Assigné à</label>
+            <div class="autocomplete-wrap">
+                <input type="text" id="taskAssignee" placeholder="Ex: Jean Dupont" autocomplete="off" oninput="showAssigneeSuggestions(this)">
+                <div class="autocomplete-list" id="assigneeSuggestions"></div>
+            </div>
+            <label>Environnement</label>
+            <div class="env-chips-group" id="taskEnvChips">
+                <button type="button" class="env-chip" data-env="dev" onclick="toggleEnvChip(this)">DEV</button>
+                <button type="button" class="env-chip" data-env="preprod" onclick="toggleEnvChip(this)">PREPROD</button>
+                <button type="button" class="env-chip" data-env="prod" onclick="toggleEnvChip(this)">PROD</button>
+            </div>
+            <label>Tags (séparés par virgule)</label>
+            <div class="autocomplete-wrap">
+                <input type="text" id="taskTags" placeholder="Ex: redis, migration, prod" autocomplete="off" oninput="showTagSuggestions(this)">
+                <div class="autocomplete-list" id="tagSuggestions"></div>
+            </div>
+            <label>Priorité</label>
+            <select id="taskPriority">
+                <option value="low">🟢 Low</option>
+                <option value="medium" selected>🟡 Medium</option>
+                <option value="high">🔴 High</option>
+                <option value="critical">⚫ Critical</option>
+            </select>
+            <label id="taskStatusLabel">Statut initial</label>
+            <select id="taskStatus">
+                <option value="todo" selected>📌 À faire</option>
+                <option value="wip">🔧 En cours</option>
+                <option value="done">✅ Terminé</option>
+            </select>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalTask')">Annuler</button>
+            <button class="btn btn-primary" id="taskSaveBtn" onclick="saveTask()">Ajouter</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Infra -->
+<div class="modal-overlay" id="modalInfra">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>🖥️ Ajouter une infra</h3>
+            <button class="btn-close" onclick="closeModal('modalInfra')">✕</button>
+        </div>
+        <div class="modal-body">
+            <label>Nom *</label>
+            <input type="text" id="infraName" placeholder="Ex: prod-web-01">
+            <label>Type</label>
+            <select id="infraType">
+                <option value="vm">VM</option>
+                <option value="lxc">LXC</option>
+                <option value="stack">Stack</option>
+                <option value="logger">Logger</option>
+                <option value="other">Autre</option>
+            </select>
+            <label>Environnement</label>
+            <select id="infraEnv">
+                <option value="">— Aucun —</option>
+                <option value="dev">DEV</option>
+                <option value="preprod">PREPROD</option>
+                <option value="prod">PROD</option>
+            </select>
+            <label>Statut</label>
+            <select id="infraStatus">
+                <option value="up">🟢 Up</option>
+                <option value="degraded">🟡 Dégradé</option>
+                <option value="down">🔴 Down</option>
+            </select>
+            <label>IP / Endpoint</label>
+            <input type="text" id="infraIp" placeholder="Ex: 10.0.1.10">
+            <label>Détails / Stack</label>
+            <textarea id="infraDetails" rows="3" placeholder="Ex: nginx, node18, pm2"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalInfra')">Annuler</button>
+            <button class="btn btn-primary" onclick="saveInfra()">Ajouter</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Paste -->
+<div class="modal-overlay" id="modalPaste">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>📋 Import en masse</h3>
+            <button class="btn-close" onclick="closeModal('modalPaste')">✕</button>
+        </div>
+        <div class="modal-body">
+            <p class="hint">Format par ligne : <code>nom | type | statut | ip | détails | env</code></p>
+            <p class="hint">Types: vm, lxc, stack, logger, other — Statuts: up, degraded, down — Env: dev, preprod, prod</p>
+            <textarea id="pasteContent" rows="8" placeholder="prod-web-01 | vm | up | 10.0.1.10 | nginx, node18 | prod
+preprod-db-01 | lxc | up | 10.0.1.20 | postgres15 | preprod
+elk-stack | stack | degraded | 10.0.2.1 | ELK 8.x | dev"></textarea>
+
+            <div class="preview-actions">
+                <button class="btn btn-small btn-secondary" onclick="previewPaste()">👁️ Prévisualiser</button>
+                <div id="previewStats" class="preview-stats"></div>
+            </div>
+
+            <div id="previewContainer" class="preview-container" style="display:none;">
+                <h4>Prévisualisation</h4>
+                <div id="previewContent" class="preview-content"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalPaste')">Annuler</button>
+            <button class="btn btn-primary" id="btnConfirmImport" onclick="parsePaste()" disabled>Importer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Export -->
+<div class="modal-overlay" id="modalExport">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>📝 Rédiger un communiqué</h3>
+            <button class="btn-close" onclick="closeModal('modalExport')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="export-tabs">
+                <button class="export-tab active" onclick="switchExportTab('markdown', this)">📝 Markdown</button>
+                <button class="export-tab" onclick="switchExportTab('slack', this)">💬 Slack</button>
+                <button class="export-tab" onclick="switchExportTab('mattermost', this)">💬 Mattermost</button>
+                <button class="export-tab" onclick="switchExportTab('preview', this)">👁️ Aperçu</button>
+            </div>
+            <div class="export-content-wrapper">
+                <textarea id="exportContent" rows="20" readonly></textarea>
+                <div id="exportPreview" class="export-preview" style="display:none"></div>
+                <button class="btn-copy-export" onclick="copyExport()" title="Copier dans le presse-papier">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5.5 4.5V3.5C5.5 2.67157 6.17157 2 7 2H12C12.8284 2 13.5 2.67157 13.5 3.5V10.5C13.5 11.3284 12.8284 12 12 12H11V13C11 13.8284 10.3284 14.5 9.5 14.5H4C3.17157 14.5 2.5 13.8284 2.5 13V6C2.5 5.17157 3.17157 4.5 4 4.5H5.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="communication-hint">
+                <div class="hint-header">
+                    <span class="hint-icon">💡</span>
+                    <span class="hint-title">Canaux de communication suggérés</span>
+                    <button class="btn-edit-channels" onclick="editChannels()" title="Modifier les canaux">✏️</button>
+                </div>
+                <div id="channelsList" class="channels-list"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalExport')">Fermer</button>
+            <button class="btn btn-primary" onclick="copyExport()">📋 Copier</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Edit Channels -->
+<div class="modal-overlay" id="modalChannels">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>✏️ Configurer les canaux</h3>
+            <button class="btn-close" onclick="closeModal('modalChannels')">✕</button>
+        </div>
+        <div class="modal-body">
+            <label>Slack</label>
+            <input type="text" id="channelSlack" placeholder="Ex: #general, #ops-alerts, #incidents">
+
+            <label>Email</label>
+            <input type="text" id="channelEmail" placeholder="Ex: ops@entreprise.com, support@entreprise.com">
+
+            <label>Teams</label>
+            <input type="text" id="channelTeams" placeholder="Ex: Équipe Ops, IT Support">
+
+            <label>Mattermost</label>
+            <input type="text" id="channelMattermost" placeholder="Ex: ~ops-alerts, ~incidents">
+
+            <label>Discord</label>
+            <input type="text" id="channelDiscord" placeholder="Ex: #ops-alerts, #incidents">
+
+            <label>Autre</label>
+            <input type="text" id="channelOther" placeholder="Ex: Wiki interne, Dashboard">
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalChannels')">Annuler</button>
+            <button class="btn btn-primary" onclick="saveChannels()">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Traffic Light Settings -->
+<div class="modal-overlay" id="modalTrafficLight">
+    <div class="modal modal-large tl-modal">
+        <div class="tl-modal-header">
+            <div class="tl-modal-title">
+                <span class="tl-modal-icon">🚦</span>
+                <div>
+                    <h3>Traffic Light</h3>
+                    <span class="tl-modal-subtitle">Configuration du scoring de santé</span>
+                </div>
+            </div>
+            <div class="tl-modal-live" id="tlModalLive"></div>
+            <button class="btn-close" onclick="closeModal('modalTrafficLight')">✕</button>
+        </div>
+        <div class="modal-body tl-modal-body">
+            <p class="tl-intro">Indicateur global de santé combinant <strong>infrastructure</strong>, <strong>impacts</strong> et <strong>tâches</strong> en un score unique (0-100 %). Ajustez les poids, seuils et plages horaires pour l'adapter à votre contexte opérationnel.</p>
+            <div class="tl-settings-grid">
+                <!-- Row 1: Mode + Seuils -->
+                <div class="tl-settings-row">
+                    <div class="tl-settings-section tl-section-mode">
+                        <div class="tl-section-icon">🎛️</div>
+                        <h4>Agrégation</h4>
+                        <p class="tl-section-desc">Comment les signaux sont combinés</p>
+                        <div class="tl-mode-toggle">
+                            <button type="button" class="tl-mode-btn" data-value="worst" id="tlModeWorst" onclick="selectTlMode('worst')">
+                                <span class="tl-mode-icon">🔴</span>
+                                <span class="tl-mode-label">Worst</span>
+                                <span class="tl-mode-desc">Le pire feu gagne</span>
+                            </button>
+                            <button type="button" class="tl-mode-btn" data-value="weighted" id="tlModeWeighted" onclick="selectTlMode('weighted')">
+                                <span class="tl-mode-icon">⚖️</span>
+                                <span class="tl-mode-label">Weighted</span>
+                                <span class="tl-mode-desc">Moyenne pondérée</span>
+                            </button>
+                        </div>
+                        <input type="hidden" id="tlMode" value="worst">
+                    </div>
+                    <div class="tl-settings-section tl-section-thresholds">
+                        <div class="tl-section-icon">📊</div>
+                        <h4>Seuils de complétion</h4>
+                        <p class="tl-section-desc">Quand la couleur change</p>
+                        <div class="tl-threshold-bar">
+                            <div class="tl-threshold-zone tl-zone-red">
+                                <span class="tl-zone-label">0%</span>
+                            </div>
+                            <div class="tl-threshold-zone tl-zone-yellow" id="tlZoneYellow">
+                                <span class="tl-zone-label" id="tlZoneYellowLabel">50%</span>
+                            </div>
+                            <div class="tl-threshold-zone tl-zone-green" id="tlZoneGreen">
+                                <span class="tl-zone-label" id="tlZoneGreenLabel">80%</span>
+                            </div>
+                        </div>
+                        <div class="tl-threshold-inputs">
+                            <label class="tl-threshold-field">
+                                <span class="tl-dot-green"></span>
+                                Vert si ≥
+                                <input type="number" id="tlThresholdGreen" min="0" max="100" oninput="updateThresholdBar()">
+                                <span>%</span>
+                            </label>
+                            <label class="tl-threshold-field">
+                                <span class="tl-dot-yellow"></span>
+                                Jaune si ≥
+                                <input type="number" id="tlThresholdYellow" min="0" max="100" oninput="updateThresholdBar()">
+                                <span>%</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2: Poids -->
+                <div class="tl-settings-section tl-section-weights">
+                    <div class="tl-section-icon">⚖️</div>
+                    <h4>Poids par métrique</h4>
+                    <p class="tl-section-desc">Importance relative de chaque pilier dans le score global</p>
+                    <div class="tl-weights-grid">
+                        <div class="tl-weight-item">
+                            <div class="tl-weight-header">
+                                <span class="tl-weight-icon">🖥️</span>
+                                <span class="tl-weight-name">Infrastructure</span>
+                                <span class="tl-weight-value" id="tlWeightInfraDisplay">40</span>
+                            </div>
+                            <input type="range" id="tlWeightInfra" min="0" max="100" class="tl-range tl-range-blue" oninput="updateWeightsDisplay()">
+                        </div>
+                        <div class="tl-weight-item">
+                            <div class="tl-weight-header">
+                                <span class="tl-weight-icon">🔴</span>
+                                <span class="tl-weight-name">Impacts</span>
+                                <span class="tl-weight-value" id="tlWeightImpactsDisplay">35</span>
+                            </div>
+                            <input type="range" id="tlWeightImpacts" min="0" max="100" class="tl-range tl-range-red" oninput="updateWeightsDisplay()">
+                        </div>
+                        <div class="tl-weight-item">
+                            <div class="tl-weight-header">
+                                <span class="tl-weight-icon">📋</span>
+                                <span class="tl-weight-name">Tâches</span>
+                                <span class="tl-weight-value" id="tlWeightTasksDisplay">25</span>
+                            </div>
+                            <input type="range" id="tlWeightTasks" min="0" max="100" class="tl-range tl-range-green" oninput="updateWeightsDisplay()">
+                        </div>
+                    </div>
+                    <div class="tl-weights-total">
+                        Total : <strong id="tlWeightsTotalValue">100</strong> %
+                        <span class="tl-weights-warn" id="tlWeightsWarn"></span>
+                    </div>
+                </div>
+
+                <!-- Row 3: Plages horaires + Exclusions -->
+                <div class="tl-settings-row">
+                    <div class="tl-settings-section tl-section-time">
+                        <div class="tl-section-icon">🕐</div>
+                        <h4>Plages horaires</h4>
+                        <p class="tl-section-desc">Seuils adaptatifs selon le créneau</p>
+                        <label class="tl-toggle-row">
+                            <div class="tl-switch">
+                                <input type="checkbox" id="tlTimeEnabled">
+                                <span class="tl-switch-slider"></span>
+                            </div>
+                            <span>Activer les plages</span>
+                        </label>
+                        <div class="tl-time-range" id="tlTimeRangeGroup">
+                            <label class="tl-time-field">
+                                <span>Heures ouvrées</span>
+                                <div class="tl-time-inputs">
+                                    <input type="number" id="tlBusinessStart" min="0" max="23"><span class="tl-time-sep">h —</span><input type="number" id="tlBusinessEnd" min="0" max="23"><span>h</span>
+                                </div>
+                            </label>
+                            <label class="tl-toggle-row">
+                                <div class="tl-switch">
+                                    <input type="checkbox" id="tlWeekendRelax">
+                                    <span class="tl-switch-slider"></span>
+                                </div>
+                                <span>Relâcher le week-end</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="tl-settings-section tl-section-exclusions">
+                        <div class="tl-section-icon">🚫</div>
+                        <h4>Exclusions</h4>
+                        <p class="tl-section-desc">Machines ignorées dans le calcul</p>
+                        <div id="tlExclusionsList" class="tl-exclusions-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalTrafficLight')">Annuler</button>
+            <button class="btn btn-primary" onclick="saveTrafficLightSettings()">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Import from Sources -->
+<div class="modal-overlay" id="modalImportSources">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>📡 Import depuis sources</h3>
+            <button class="btn-close" onclick="closeModal('modalImportSources')">✕</button>
+        </div>
+        <div class="modal-body">
+            <label>Format source</label>
+            <select id="importSourceFormat">
+                <option value="prometheus">Prometheus (targets / up metric)</option>
+                <option value="zabbix">Zabbix (hosts API)</option>
+                <option value="json">JSON générique</option>
+            </select>
+
+            <label>URL de l'API (optionnel)</label>
+            <div class="import-url-row">
+                <input type="text" id="importSourceUrl" placeholder="Ex: http://prometheus:9090/api/v1/targets">
+                <button class="btn btn-small btn-secondary" onclick="fetchImportSource()">🔗 Fetch</button>
+            </div>
+            <p class="hint">⚠️ L'URL doit être accessible depuis votre navigateur (CORS). Sinon, collez les données JSON ci-dessous.</p>
+
+            <label>Données JSON</label>
+            <textarea id="importSourceJson" rows="8" placeholder='Collez ici le JSON de votre source de monitoring...
+Prometheus: résultat de /api/v1/targets ou /api/v1/query?query=up
+Zabbix: résultat de host.get
+JSON: tableau [{name, type, status, ip}]'></textarea>
+
+            <div class="preview-actions">
+                <button class="btn btn-small btn-secondary" onclick="previewSourceImport()">👁️ Prévisualiser</button>
+            </div>
+            <div id="importSourcePreview" class="preview-content" style="display:none;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalImportSources')">Annuler</button>
+            <button class="btn btn-primary" id="btnConfirmSourceImport" onclick="confirmSourceImport()" disabled>📡 Importer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Metric Detail -->
+<div class="modal-overlay" id="modalMetricDetail">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3 id="metricDetailTitle">Détail</h3>
+            <button class="btn-close" onclick="closeModal('modalMetricDetail')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="metricDetailContent" class="metric-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalMetricDetail')">Fermer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: API Endpoints (unified) -->
+<div class="modal-overlay" id="modalApiConfig">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>🔌 Endpoints API</h3>
+            <button class="btn-close" onclick="closeModal('modalApiConfig')">✕</button>
+        </div>
+        <div class="modal-body">
+            <p class="hint">Centralisez vos connexions API. Le token est facultatif pour les endpoints publics.</p>
+            <div id="apiEndpointList" class="api-endpoint-list"></div>
+            <div class="api-form">
+                <div class="api-form-row">
+                    <select id="apiType" onchange="onApiTypeChange()">
+                        <option value="gitlab">🦊 GitLab</option>
+                        <option value="github">🐙 GitHub</option>
+                        <option value="consul">🟢 Consul</option>
+                        <option value="ansible">🤖 Ansible</option>
+                        <option value="openstack">☁️ OpenStack</option>
+                    </select>
+                    <input type="text" id="apiName" placeholder="Nom">
+                    <input type="text" id="apiUrl" placeholder="URL">
+                </div>
+                <div class="api-form-row">
+                    <input type="password" id="apiToken" placeholder="Token (optionnel)" autocomplete="off">
+                    <div id="apiFieldsExtra" class="api-fields-extra">
+                        <input type="text" id="apiProjectId" placeholder="Project ID">
+                        <input type="text" id="apiBranch" placeholder="Branche (main)">
+                    </div>
+                    <button class="btn btn-small btn-primary" onclick="addApiEndpoint()">+ Ajouter</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalApiConfig')">Fermer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: GitLab MR Detail -->
+<div class="modal-overlay" id="modalGitlabDetail">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>🦊 Merge Requests ouvertes</h3>
+            <button class="btn-close" onclick="closeModal('modalGitlabDetail')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="gitlabDetailContent" class="gitlab-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalGitlabDetail')">Fermer</button>
+            <button class="btn btn-primary" onclick="fetchAllGitlabMRs()">🔄 Rafraîchir</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAL: GitLab Pipelines Detail -->
+<div class="modal-overlay" id="modalGitlabPipelines">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>🚀 Pipelines CI/CD</h3>
+            <button class="btn-close" onclick="closeModal('modalGitlabPipelines')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="gitlabPipelinesContent" class="metric-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalGitlabPipelines')">Fermer</button>
+            <button class="btn btn-primary" onclick="fetchAllGitlabPipelines()">🔄 Rafraîchir</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: GitLab Commits Detail -->
+<div class="modal-overlay" id="modalGitlabCommits">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>📝 Commits récents (7 jours)</h3>
+            <button class="btn-close" onclick="closeModal('modalGitlabCommits')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="gitlabCommitsContent" class="metric-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalGitlabCommits')">Fermer</button>
+            <button class="btn btn-primary" onclick="fetchAllGitlabCommits()">🔄 Rafraîchir</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: GitHub PR Detail -->
+<div class="modal-overlay" id="modalGithubPR">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>🐙 Pull Requests GitHub ouvertes</h3>
+            <button class="btn-close" onclick="closeModal('modalGithubPR')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="githubPRDetailContent" class="gitlab-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalGithubPR')">Fermer</button>
+            <button class="btn btn-primary" onclick="fetchAllGithubPRs()">🔄 Rafraîchir</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: GitHub Actions Detail -->
+<div class="modal-overlay" id="modalGithubActions">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>⚡ GitHub Actions</h3>
+            <button class="btn-close" onclick="closeModal('modalGithubActions')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="githubActionsContent" class="metric-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalGithubActions')">Fermer</button>
+            <button class="btn btn-primary" onclick="fetchAllGithubActions()">🔄 Rafraîchir</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: GitHub Commits Detail -->
+<div class="modal-overlay" id="modalGithubCommits">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>📝 Commits GitHub récents (7 jours)</h3>
+            <button class="btn-close" onclick="closeModal('modalGithubCommits')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="githubCommitsContent" class="metric-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalGithubCommits')">Fermer</button>
+            <button class="btn btn-primary" onclick="fetchAllGithubCommits()">🔄 Rafraîchir</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: MTTR Detail -->
+<div class="modal-overlay" id="modalMTTR">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>⏱️ MTTR — Mean Time To Recover</h3>
+            <button class="btn-close" onclick="closeModal('modalMTTR')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="mttrDetailContent" class="metric-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalMTTR')">Fermer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Deploy Frequency Detail -->
+<div class="modal-overlay" id="modalDeployFreq">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>🚀 Deployment Frequency</h3>
+            <button class="btn-close" onclick="closeModal('modalDeployFreq')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="deployFreqDetailContent" class="metric-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalDeployFreq')">Fermer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Change Failure Rate Detail -->
+<div class="modal-overlay" id="modalCFR">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>📉 Change Failure Rate</h3>
+            <button class="btn-close" onclick="closeModal('modalCFR')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="cfrDetailContent" class="metric-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalCFR')">Fermer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Consul Detail -->
+<div class="modal-overlay" id="modalConsulDetail">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>🟢 Consul — Services & Nodes</h3>
+            <button class="btn-close" onclick="closeModal('modalConsulDetail')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="consulDetailContent" class="metric-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalConsulDetail')">Fermer</button>
+            <button class="btn btn-small btn-secondary" onclick="closeModal('modalConsulDetail');openApiConfig()">⚙️ Configurer</button>
+            <button class="btn btn-primary" onclick="fetchAllConsul()">🔄 Rafraîchir</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAL: Ansible Detail -->
+<div class="modal-overlay" id="modalAnsibleDetail">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>🅰️ Ansible — Playbooks</h3>
+            <button class="btn-close" onclick="closeModal('modalAnsibleDetail')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="ansibleDetailContent" class="metric-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalAnsibleDetail')">Fermer</button>
+            <button class="btn btn-small btn-secondary" onclick="closeModal('modalAnsibleDetail');openApiConfig()">⚙️ Configurer</button>
+            <button class="btn btn-primary" onclick="fetchAllAnsible()">🔄 Rafraîchir</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAL: OpenStack Detail -->
+<div class="modal-overlay" id="modalOpenstackDetail">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>☁️ OpenStack — Instances & Volumes</h3>
+            <button class="btn-close" onclick="closeModal('modalOpenstackDetail')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="openstackDetailContent" class="metric-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalOpenstackDetail')">Fermer</button>
+            <button class="btn btn-small btn-secondary" onclick="closeModal('modalOpenstackDetail');openApiConfig()">⚙️ Configurer</button>
+            <button class="btn btn-primary" onclick="fetchAllOpenstack()">🔄 Rafraîchir</button>
+        </div>
+    </div>
+</div>
+
+<!-- SIDEBAR: Dashboard Settings -->
+<aside class="ds-sidebar" id="dsSidebar">
+    <div class="ds-sidebar-header">
+        <h3>⚙️ Affichage</h3>
+        <button class="btn btn-secondary btn-small" id="dsResetBtn" onclick="dsResetAll()">Tout afficher</button>
+        <button class="btn-close" onclick="closeDashboardSettings()">✕</button>
+    </div>
+    <div class="ds-sidebar-body">
+        <p class="hint">Éléments masqués restent en mémoire.</p>
+        <div id="dsCategories" class="ds-categories"></div>
+
+        <div class="ds-section-sep"></div>
+        <div class="ds-channels-section">
+            <div class="ds-channels-header" onclick="dsToggleChannels(this)">
+                <span class="ds-chevron">▼</span>
+                <span class="ds-category-icon">📢</span>
+                <span class="ds-category-label">Canaux de communication</span>
+            </div>
+            <div class="ds-channels-body" id="dsChannelsBody">
+                <div class="ds-channel-row">
+                    <label>💬 Slack</label>
+                    <input type="text" id="dsChannelSlack" placeholder="#general, #ops-alerts" onchange="dsSaveChannels()">
+                </div>
+                <div class="ds-channel-row">
+                    <label>📧 Email</label>
+                    <input type="text" id="dsChannelEmail" placeholder="ops@entreprise.com" onchange="dsSaveChannels()">
+                </div>
+                <div class="ds-channel-row">
+                    <label>👥 Teams</label>
+                    <input type="text" id="dsChannelTeams" placeholder="Équipe Ops" onchange="dsSaveChannels()">
+                </div>
+                <div class="ds-channel-row">
+                    <label>💬 Mattermost</label>
+                    <input type="text" id="dsChannelMattermost" placeholder="~ops-alerts, ~incidents" onchange="dsSaveChannels()">
+                </div>
+                <div class="ds-channel-row">
+                    <label>🎮 Discord</label>
+                    <input type="text" id="dsChannelDiscord" placeholder="#ops-alerts, #incidents" onchange="dsSaveChannels()">
+                </div>
+                <div class="ds-channel-row">
+                    <label>🔗 Autre</label>
+                    <input type="text" id="dsChannelOther" placeholder="Wiki interne" onchange="dsSaveChannels()">
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>
+<div class="ds-sidebar-backdrop" id="dsSidebarBackdrop" onclick="closeDashboardSettings()"></div>
+
+<script src="js/main.js"></script>
+</body>
+</html>

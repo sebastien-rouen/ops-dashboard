@@ -1,0 +1,284 @@
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1400px) {
+    .metrics-group { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 1024px) {
+    .charts-grid, .charts-grid.cols-3 { grid-template-columns: 1fr; }
+    .kanban-board { grid-template-columns: 1fr; }
+    .metrics-group { grid-template-columns: repeat(2, 1fr); }
+
+    .metric-card {
+        padding: 16px;
+    }
+
+    .metric-icon {
+        font-size: 1.8rem;
+    }
+
+    .metric-value {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .header-top { padding: 12px 16px; flex-direction: column; gap: 10px; }
+    .header-impacts { padding: 6px 16px; }
+    main { padding: 16px; }
+    .metrics-group { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .impacts-grid { grid-template-columns: 1fr; }
+    .infra-row-name { min-width: 100px; font-size: 0.78rem; }
+    .infra-row-ip { display: none; }
+    .infra-row-details { font-size: 0.7rem; }
+    .infra-row { padding: 7px 12px; gap: 6px; font-size: 0.78rem; }
+    .infra-row-actions { opacity: 1; }
+    .header-right { flex-wrap: wrap; justify-content: center; }
+    .header-sep { display: none; }
+
+    .metric-card {
+        aspect-ratio: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 14px;
+        gap: 8px;
+    }
+
+    .metric-card .metric-content {
+        text-align: center;
+    }
+
+    .metric-icon {
+        font-size: 2.4rem;
+    }
+
+    .metric-value {
+        font-size: 2rem;
+    }
+
+    .metric-label {
+        font-size: 0.78rem;
+    }
+
+    .metric-card .metric-progress {
+        width: 80%;
+        margin: 6px auto 0;
+    }
+}
+
+/* ========== TOOLBAR (TABS + FILTERS) ========== */
+.toolbar {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+}
+
+.toolbar-inner {
+    max-width: 1440px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 0;
+}
+
+.view-tabs-inline {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.view-tab {
+    padding: 6px 16px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition);
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+.view-tab:hover {
+    color: var(--text-primary);
+    background: var(--bg-input);
+}
+
+.view-tab.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.toolbar-filters {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.search-wrapper {
+    position: relative;
+    flex: 1;
+    min-width: 140px;
+    max-width: 280px;
+}
+
+.search-wrapper .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.78rem;
+    pointer-events: none;
+}
+
+.search-wrapper input {
+    width: 100%;
+    padding: 6px 30px 6px 30px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-family: inherit;
+    transition: border-color var(--transition);
+}
+
+.search-wrapper input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.search-wrapper input::placeholder {
+    color: var(--text-muted);
+}
+
+.search-clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: all var(--transition);
+}
+
+.search-clear:hover {
+    color: var(--text-primary);
+    background: var(--bg-card-hover);
+}
+
+.filter-dropdowns {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.filter-dropdowns select,
+.filter-dropdowns input {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.78rem;
+    font-family: inherit;
+    transition: border-color var(--transition);
+    cursor: pointer;
+    min-width: 100px;
+}
+
+.filter-dropdowns select:focus,
+.filter-dropdowns input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.filter-dropdowns input {
+    min-width: 100px;
+}
+
+.filter-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.btn-clear-filters {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all var(--transition);
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+.btn-clear-filters:hover {
+    border-color: var(--red);
+    color: var(--red);
+    background: var(--red-bg);
+}
+
+@media (max-width: 1024px) {
+    .toolbar-inner { flex-wrap: wrap; }
+    .toolbar-filters { flex-wrap: wrap; }
+    .search-wrapper { max-width: none; }
+}
+
+@media (max-width: 768px) {
+    .toolbar { padding: 0 16px; }
+    .toolbar-inner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding: 8px 0;
+    }
+    .view-tabs-inline {
+        overflow-x: auto;
+        justify-content: center;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .view-tabs-inline::-webkit-scrollbar { display: none; }
+    .view-tab { padding: 5px 12px; font-size: 0.78rem; }
+    .toolbar-filters {
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 6px;
+    }
+    .search-wrapper { min-width: unset; max-width: none; flex: 1 1 100%; }
+    .filter-dropdowns {
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 6px;
+    }
+    .filter-dropdowns select,
+    .filter-dropdowns input { flex: 1; min-width: 80px; font-size: 0.75rem; }
+}
+
+@media (max-width: 480px) {
+    .toolbar { padding: 0 12px; }
+    .view-tab { padding: 4px 10px; font-size: 0.72rem; }
+    .filter-dropdowns select,
+    .filter-dropdowns input { min-width: 60px; font-size: 0.72rem; }
+    .btn-clear-filters { font-size: 0.65rem; padding: 2px 8px; }
+}

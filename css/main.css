@@ -1,0 +1,23 @@
+/* ==================== MAIN — Entry Point CSS ==================== */
+
+/* Core / Foundation */
+@import url('core/variables.css');
+@import url('core/base.css');
+
+/* Components */
+@import url('components/header.css');
+@import url('components/metrics.css');
+@import url('components/impacts.css');
+@import url('components/tasks.css');
+@import url('components/infra.css');
+@import url('components/charts.css');
+@import url('components/modals.css');
+@import url('components/traffic-light.css');
+@import url('components/sidebar.css');
+
+/* Integrations */
+@import url('integrations/integrations.css');
+
+/* Core / Overrides (après components) */
+@import url('core/compact.css');
+@import url('core/responsive.css');

@@ -1,0 +1,59 @@
+/* ========== COMPACT MODE ========== */
+.compact-mode main { padding: 12px 16px; gap: 12px; }
+.compact-mode .header-top { padding: 8px 20px; }
+.compact-mode .header-left h1 { font-size: 0.95rem; }
+.compact-mode .header-impacts { padding: 4px 20px; min-height: 28px; }
+.compact-mode .toolbar { padding: 0 16px; }
+.compact-mode .toolbar-inner { padding: 6px 0; gap: 10px; }
+
+.compact-mode .metric-card { padding: 10px 12px; gap: 8px; }
+.compact-mode .metric-icon { font-size: 1.4rem; }
+.compact-mode .metric-value { font-size: 1.2rem; }
+.compact-mode .metric-label { font-size: 0.65rem; }
+.compact-mode .metric-card:hover { transform: none; box-shadow: none; }
+.compact-mode .metrics-group-label { font-size: 0.58rem; padding: 6px 0 1px; }
+
+.compact-mode .section-header { margin-bottom: 10px; }
+.compact-mode .section-header h2 { font-size: 0.92rem; }
+
+.compact-mode .chart-wrap { height: 160px; }
+.compact-mode .chart-wrap-doughnut { height: 130px; }
+.compact-mode .chart-wrap-pricing { height: 180px; }
+.compact-mode .chart-container { padding: 14px; }
+.compact-mode .chart-container h3 { font-size: 0.85rem; margin-bottom: 10px; }
+
+.compact-mode .kanban-board { gap: 10px; }
+.compact-mode .task-card { padding: 8px 10px; }
+.compact-mode .task-title { font-size: 0.78rem; }
+.compact-mode .task-desc { font-size: 0.72rem; margin-bottom: 4px; }
+.compact-mode .task-actions button { font-size: 0.62rem; padding: 2px 8px; }
+
+.compact-mode .infra-grid { gap: 10px; }
+.compact-mode .infra-row { padding: 5px 12px; font-size: 0.76rem; gap: 6px; }
+.compact-mode .infra-row-name { font-size: 0.76rem; min-width: 110px; }
+.compact-mode .infra-group-header { padding: 5px 12px; font-size: 0.7rem; }
+.compact-mode .infra-name { font-size: 0.82rem; }
+
+.compact-mode .log-entries { max-height: 180px; }
+.compact-mode .log-entry { padding: 4px 8px; font-size: 0.72rem; }
+
+.compact-mode .section-infra,
+.compact-mode .section-kanban,
+.compact-mode .section-log,
+.compact-mode .section-history { padding: 14px; }
+
+.compact-mode .history-list { max-height: 200px; }
+.compact-mode .history-item { padding: 6px 8px; font-size: 0.72rem; }
+
+.compact-mode .traffic-light-widget { padding: 2px 6px; gap: 4px; }
+.compact-mode .tl-indicator .tl-light { font-size: 0.85rem; }
+.compact-mode .tl-indicator .tl-score { font-size: 0.72rem; }
+.compact-mode .tl-details { display: none; }
+.compact-mode .tl-mini { font-size: 0.55rem; }
+
+.compact-mode .env-pill { padding: 2px 6px; font-size: 0.62rem; }
+.compact-mode .env-pill-dot { width: 6px; height: 6px; }
+.compact-mode .env-pill-count { display: none; }
+.compact-mode .prod-alert-banner { padding: 4px 0; font-size: 0.75rem; min-height: auto; }
+.compact-mode .prod-alert-icon { font-size: 1.1rem; }
+.compact-mode .prod-alert-title { font-size: 0.62rem; margin-bottom: 0; }

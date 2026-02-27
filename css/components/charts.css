@@ -1,0 +1,309 @@
+/* ========== CHARTS ========== */
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.charts-grid.cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.charts-layout-toggle {
+    grid-column: 1 / -1;
+    justify-self: end;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    margin-bottom: -8px;
+}
+
+.charts-layout-toggle:hover {
+    background: var(--bg-input);
+    color: var(--text);
+}
+
+.chart-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.chart-container h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 16px; }
+
+.chart-empty-msg {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    padding: 40px 20px;
+    line-height: 1.5;
+    opacity: 0.7;
+}
+
+.chart-wrap { position: relative; height: 220px; width: 100%; }
+.chart-wrap-doughnut { height: 180px; }
+
+.infra-status-legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 14px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.legend-dot.up { background: var(--green); }
+.legend-dot.degraded { background: var(--yellow); }
+.legend-dot.down { background: var(--red); }
+
+/* Pricing Chart */
+.chart-container-wide {
+    grid-column: 1 / -1;
+}
+
+/* Dual donut row (Ansible, OpenStack) */
+.chart-row-dual {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.chart-container-half {
+    min-width: 0;
+}
+@media (max-width: 600px) {
+    .chart-row-dual { grid-template-columns: 1fr; }
+}
+
+.chart-wrap-pricing {
+    height: 280px;
+}
+
+.pricing-chart-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.pricing-controls-row {
+    display: flex;
+    gap: 6px;
+}
+
+.pricing-duration-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.pricing-duration-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-right: 4px;
+}
+
+.pricing-dur-btn {
+    padding: 3px 10px;
+    border-radius: 14px;
+    border: 1px solid var(--border-light);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pricing-dur-btn:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+.pricing-dur-btn.active {
+    background: var(--accent-subtle, rgba(99,102,241,0.12));
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.pricing-view-btn {
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border-light);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pricing-view-btn:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+.pricing-view-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+.pricing-legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+.pricing-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.pricing-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.pricing-legend-label {
+    font-weight: 500;
+}
+
+.pricing-legend-count {
+    font-size: 0.7rem;
+    background: var(--bg-input);
+    padding: 1px 7px;
+    border-radius: 10px;
+    color: var(--text-muted);
+}
+
+.pricing-insight {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: var(--bg-input);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.pricing-insight .insight-best {
+    flex: 1;
+    min-width: 200px;
+}
+
+.pricing-insight .insight-crossover {
+    flex: 1;
+    min-width: 200px;
+    color: var(--text-muted);
+}
+
+.pricing-insight .insight-hint {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ========== DOWNTIME COST CHART ========== */
+.downtime-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+.downtime-controls-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.downtime-rate-field {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+.downtime-rate-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.downtime-rate-field input {
+    width: 52px;
+    padding: 3px 6px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-input);
+    color: var(--text);
+    font-size: 0.78rem;
+    text-align: right;
+}
+.downtime-insight {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    padding: 10px 14px;
+    margin-top: 8px;
+    background: var(--bg-input);
+    border-radius: 10px;
+    font-size: 0.8rem;
+}
+.downtime-insight:empty { display: none; }
+.downtime-insight-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.downtime-insight-val {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+}
+.downtime-insight-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.downtime-insight-title {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    align-self: center;
+}
