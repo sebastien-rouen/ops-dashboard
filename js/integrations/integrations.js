@@ -727,7 +727,8 @@ const API_TYPES = {
     prometheus: { icon: '📊', label: 'Prometheus', color: '#e6522c' },
     grafana:    { icon: '📈', label: 'Grafana',    color: '#f46800' },
     loki:       { icon: '📋', label: 'Loki',       color: '#2c99d6' },
-    vault:      { icon: '🔐', label: 'Vault',      color: '#000000' }
+    vault:      { icon: '🔐', label: 'Vault',      color: '#000000' },
+    tempo:      { icon: '🔍', label: 'Tempo',      color: '#f55353' }
 };
 
 function openApiConfig() {
@@ -768,6 +769,8 @@ function onApiTypeChange() {
         projId.style.display = '';
         branch.style.display = 'none';
         projId.placeholder = 'Namespace (optionnel)';
+    } else if (type === 'tempo') {
+        extra.style.display = 'none';
     } else {
         extra.style.display = 'none';
     }
@@ -822,6 +825,11 @@ function renderApiEndpointList() {
         const c = (state.vaultCache || {})[ep.id];
         const info = c ? (c.ok ? '✓ ' + c.status : '✗ ' + (c.status || 'err')) : '…';
         all.push({ type: 'vault', id: ep.id, name: ep.name, url: ep.url, detail: ep.namespace || '', info, fetchedAt: c?.testedAt, testResult: c });
+    });
+    (state.tempoEndpoints || []).forEach(ep => {
+        const c = (state.tempoCache || {})[ep.id];
+        const info = c ? (c.ok ? '✓ ' + c.status : '✗ ' + (c.status || 'err')) : '…';
+        all.push({ type: 'tempo', id: ep.id, name: ep.name, url: ep.url, detail: '', info, fetchedAt: c?.testedAt, testResult: c });
     });
 
     if (all.length === 0) {
@@ -920,6 +928,12 @@ function addApiEndpoint() {
         state.vaultEndpoints.push({ id, name, url, namespace, token });
         saveState(); renderApiEndpointList();
         testApiEndpoint('vault', id);
+    } else if (type === 'tempo') {
+        if (!state.tempoEndpoints) state.tempoEndpoints = [];
+        const id = uid();
+        state.tempoEndpoints.push({ id, name, url, token });
+        saveState(); renderApiEndpointList();
+        testApiEndpoint('tempo', id);
     }
 
     // Clear form
@@ -975,6 +989,10 @@ function removeApiEndpoint(type, id) {
         state.vaultEndpoints = (state.vaultEndpoints || []).filter(e => e.id !== id);
         if (state.vaultCache) delete state.vaultCache[id];
         saveState(); renderApiEndpointList();
+    } else if (type === 'tempo') {
+        state.tempoEndpoints = (state.tempoEndpoints || []).filter(e => e.id !== id);
+        if (state.tempoCache) delete state.tempoCache[id];
+        saveState(); renderApiEndpointList();
     }
     updateMetricGroupVisibility();
 }
@@ -985,7 +1003,7 @@ function refreshApiEndpoint(type, id) {
     else if (type === 'consul') fetchConsul(id).then(() => renderApiEndpointList());
     else if (type === 'ansible') fetchAnsible(id).then(() => renderApiEndpointList());
     else if (type === 'openstack') fetchOpenstack(id).then(() => renderApiEndpointList());
-    else if (type === 'prometheus' || type === 'grafana' || type === 'loki' || type === 'vault') testApiEndpoint(type, id);
+    else if (type === 'prometheus' || type === 'grafana' || type === 'loki' || type === 'vault' || type === 'tempo') testApiEndpoint(type, id);
 }
 
 // ==================== API TEST CONNECTION ====================
@@ -998,7 +1016,8 @@ const API_TEST_PATHS = {
     prometheus: { path: () => '/api/v1/status/buildinfo', authHeader: 'Authorization', authPrefix: 'Bearer ' },
     grafana:    { path: () => '/api/health', authHeader: 'Authorization', authPrefix: 'Bearer ' },
     loki:       { path: () => '/loki/api/v1/status/buildinfo', authHeader: 'Authorization', authPrefix: 'Bearer ' },
-    vault:      { path: () => '/v1/sys/health', authHeader: 'X-Vault-Token' }
+    vault:      { path: () => '/v1/sys/health', authHeader: 'X-Vault-Token' },
+    tempo:      { path: () => '/ready', authHeader: 'Authorization', authPrefix: 'Bearer ' }
 };
 
 function getEndpointArrayKey(type) {
