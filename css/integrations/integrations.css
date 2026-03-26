@@ -534,6 +534,11 @@
     .api-form-row select { max-width: 100%; }
     .api-fields-extra { flex-basis: 100%; }
 }
+.api-ep-test-btn {
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    min-width: 28px;
+}
 
 /* ========== GITLAB DETAIL MODAL ========== */
 .gitlab-detail-content {

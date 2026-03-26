@@ -949,6 +949,10 @@ JSON: tableau [{name, type, status, ip}]'></textarea>
                         <option value="consul">🟢 Consul</option>
                         <option value="ansible">🤖 Ansible</option>
                         <option value="openstack">☁️ OpenStack</option>
+                        <option value="prometheus">📊 Prometheus</option>
+                        <option value="grafana">📈 Grafana</option>
+                        <option value="loki">📋 Loki</option>
+                        <option value="vault">🔐 Vault</option>
                     </select>
                     <input type="text" id="apiName" placeholder="Nom">
                     <input type="text" id="apiUrl" placeholder="URL">
@@ -959,6 +963,7 @@ JSON: tableau [{name, type, status, ip}]'></textarea>
                         <input type="text" id="apiProjectId" placeholder="Project ID">
                         <input type="text" id="apiBranch" placeholder="Branche (main)">
                     </div>
+                    <button class="btn btn-small btn-secondary" onclick="testApiConnection()" title="Tester la connexion">⚡ Test</button>
                     <button class="btn btn-small btn-primary" onclick="addApiEndpoint()">+ Ajouter</button>
                 </div>
             </div>

@@ -723,7 +723,11 @@ const API_TYPES = {
     github:    { icon: '🐙', label: 'GitHub',    color: '#6e40c9' },
     consul:    { icon: '🟢', label: 'Consul',    color: '#dc477d' },
     ansible:   { icon: '🤖', label: 'Ansible',   color: '#ee0000' },
-    openstack: { icon: '☁️', label: 'OpenStack', color: '#ed1944' }
+    openstack:  { icon: '☁️', label: 'OpenStack',  color: '#ed1944' },
+    prometheus: { icon: '📊', label: 'Prometheus', color: '#e6522c' },
+    grafana:    { icon: '📈', label: 'Grafana',    color: '#f46800' },
+    loki:       { icon: '📋', label: 'Loki',       color: '#2c99d6' },
+    vault:      { icon: '🔐', label: 'Vault',      color: '#000000' }
 };
 
 function openApiConfig() {
@@ -754,6 +758,16 @@ function onApiTypeChange() {
         projId.style.display = '';
         branch.style.display = 'none';
         projId.placeholder = 'Projet / Tenant';
+    } else if (type === 'grafana') {
+        extra.style.display = 'flex';
+        projId.style.display = '';
+        branch.style.display = 'none';
+        projId.placeholder = 'Org ID (optionnel)';
+    } else if (type === 'vault') {
+        extra.style.display = 'flex';
+        projId.style.display = '';
+        branch.style.display = 'none';
+        projId.placeholder = 'Namespace (optionnel)';
     } else {
         extra.style.display = 'none';
     }
@@ -789,6 +803,26 @@ function renderApiEndpointList() {
         const info = c && !c.error ? `${c.instances} inst. / ${c.volumes} vol.` : c?.error ? 'erreur' : '…';
         all.push({ type: 'openstack', id: ep.id, name: ep.name, url: ep.url, detail: ep.project || '', info, fetchedAt: c?.fetchedAt });
     });
+    (state.prometheusEndpoints || []).forEach(ep => {
+        const c = (state.prometheusCache || {})[ep.id];
+        const info = c ? (c.ok ? '✓ ' + c.status : '✗ ' + (c.status || 'err')) : '…';
+        all.push({ type: 'prometheus', id: ep.id, name: ep.name, url: ep.url, detail: '', info, fetchedAt: c?.testedAt, testResult: c });
+    });
+    (state.grafanaEndpoints || []).forEach(ep => {
+        const c = (state.grafanaCache || {})[ep.id];
+        const info = c ? (c.ok ? '✓ ' + c.status : '✗ ' + (c.status || 'err')) : '…';
+        all.push({ type: 'grafana', id: ep.id, name: ep.name, url: ep.url, detail: ep.orgId || '', info, fetchedAt: c?.testedAt, testResult: c });
+    });
+    (state.lokiEndpoints || []).forEach(ep => {
+        const c = (state.lokiCache || {})[ep.id];
+        const info = c ? (c.ok ? '✓ ' + c.status : '✗ ' + (c.status || 'err')) : '…';
+        all.push({ type: 'loki', id: ep.id, name: ep.name, url: ep.url, detail: '', info, fetchedAt: c?.testedAt, testResult: c });
+    });
+    (state.vaultEndpoints || []).forEach(ep => {
+        const c = (state.vaultCache || {})[ep.id];
+        const info = c ? (c.ok ? '✓ ' + c.status : '✗ ' + (c.status || 'err')) : '…';
+        all.push({ type: 'vault', id: ep.id, name: ep.name, url: ep.url, detail: ep.namespace || '', info, fetchedAt: c?.testedAt, testResult: c });
+    });
 
     if (all.length === 0) {
         container.innerHTML = '<div class="empty-state" style="padding:16px;font-size:0.82rem">Aucun endpoint configuré. Utilisez le formulaire ci-dessous.</div>';
@@ -798,7 +832,7 @@ function renderApiEndpointList() {
     container.innerHTML = all.map(ep => {
         const t = API_TYPES[ep.type];
         const sync = ep.fetchedAt ? `<span class="api-ep-sync" title="${new Date(ep.fetchedAt).toLocaleString('fr-FR')}">⟳ ${timeAgoShort(ep.fetchedAt)}</span>` : '';
-        const infoClass = ep.info === 'erreur' ? ' style="color:var(--red)"' : '';
+        const infoClass = ep.info === 'erreur' || (ep.testResult && !ep.testResult.ok) ? ' style="color:var(--red)"' : (ep.testResult?.ok ? ' style="color:var(--green)"' : '');
         return `<div class="api-ep-item">
             <span class="api-ep-type" style="background:${t.color}">${t.icon}</span>
             <div class="api-ep-info">
@@ -807,6 +841,7 @@ function renderApiEndpointList() {
             </div>
             <span class="api-ep-count"${infoClass}>${ep.info}</span>
             ${sync}
+            <button class="btn btn-small btn-secondary api-ep-test-btn" onclick="testApiEndpoint('${ep.type}','${ep.id}')" title="Tester la connexion">⚡</button>
             <button class="btn btn-small btn-secondary" onclick="refreshApiEndpoint('${ep.type}','${ep.id}')" title="Rafraîchir">🔄</button>
             <button class="btn btn-small btn-danger" onclick="removeApiEndpoint('${ep.type}','${ep.id}')" title="Supprimer">✕</button>
         </div>`;
@@ -859,6 +894,32 @@ function addApiEndpoint() {
         state.openstackEndpoints.push({ id, name, url, project, token });
         saveState(); renderApiEndpointList(); renderOpenstackMetric();
         fetchOpenstack(id);
+    } else if (type === 'prometheus') {
+        if (!state.prometheusEndpoints) state.prometheusEndpoints = [];
+        const id = uid();
+        state.prometheusEndpoints.push({ id, name, url, token });
+        saveState(); renderApiEndpointList();
+        testApiEndpoint('prometheus', id);
+    } else if (type === 'grafana') {
+        const orgId = document.getElementById('apiProjectId').value.trim();
+        if (!state.grafanaEndpoints) state.grafanaEndpoints = [];
+        const id = uid();
+        state.grafanaEndpoints.push({ id, name, url, orgId, token });
+        saveState(); renderApiEndpointList();
+        testApiEndpoint('grafana', id);
+    } else if (type === 'loki') {
+        if (!state.lokiEndpoints) state.lokiEndpoints = [];
+        const id = uid();
+        state.lokiEndpoints.push({ id, name, url, token });
+        saveState(); renderApiEndpointList();
+        testApiEndpoint('loki', id);
+    } else if (type === 'vault') {
+        const namespace = document.getElementById('apiProjectId').value.trim();
+        if (!state.vaultEndpoints) state.vaultEndpoints = [];
+        const id = uid();
+        state.vaultEndpoints.push({ id, name, url, namespace, token });
+        saveState(); renderApiEndpointList();
+        testApiEndpoint('vault', id);
     }
 
     // Clear form
@@ -898,6 +959,22 @@ function removeApiEndpoint(type, id) {
         state.openstackEndpoints = (state.openstackEndpoints || []).filter(e => e.id !== id);
         if (state.openstackCache) delete state.openstackCache[id];
         saveState(); renderApiEndpointList(); renderOpenstackMetric(); updateOpenstackCharts();
+    } else if (type === 'prometheus') {
+        state.prometheusEndpoints = (state.prometheusEndpoints || []).filter(e => e.id !== id);
+        if (state.prometheusCache) delete state.prometheusCache[id];
+        saveState(); renderApiEndpointList();
+    } else if (type === 'grafana') {
+        state.grafanaEndpoints = (state.grafanaEndpoints || []).filter(e => e.id !== id);
+        if (state.grafanaCache) delete state.grafanaCache[id];
+        saveState(); renderApiEndpointList();
+    } else if (type === 'loki') {
+        state.lokiEndpoints = (state.lokiEndpoints || []).filter(e => e.id !== id);
+        if (state.lokiCache) delete state.lokiCache[id];
+        saveState(); renderApiEndpointList();
+    } else if (type === 'vault') {
+        state.vaultEndpoints = (state.vaultEndpoints || []).filter(e => e.id !== id);
+        if (state.vaultCache) delete state.vaultCache[id];
+        saveState(); renderApiEndpointList();
     }
     updateMetricGroupVisibility();
 }
@@ -908,6 +985,95 @@ function refreshApiEndpoint(type, id) {
     else if (type === 'consul') fetchConsul(id).then(() => renderApiEndpointList());
     else if (type === 'ansible') fetchAnsible(id).then(() => renderApiEndpointList());
     else if (type === 'openstack') fetchOpenstack(id).then(() => renderApiEndpointList());
+    else if (type === 'prometheus' || type === 'grafana' || type === 'loki' || type === 'vault') testApiEndpoint(type, id);
+}
+
+// ==================== API TEST CONNECTION ====================
+const API_TEST_PATHS = {
+    gitlab:     { path: (ep) => `/api/v4/projects/${encodeURIComponent(ep.projectId)}`, authHeader: 'PRIVATE-TOKEN' },
+    github:     { path: (ep) => `/repos/${ep.owner}/${ep.repo}`, authHeader: 'Authorization', authPrefix: 'Bearer ' },
+    consul:     { path: () => '/v1/status/leader', authHeader: 'X-Consul-Token' },
+    ansible:    { path: () => '/api/v2/ping/', authHeader: 'Authorization', authPrefix: 'Bearer ' },
+    openstack:  { path: () => '/v3/', authHeader: 'X-Auth-Token' },
+    prometheus: { path: () => '/api/v1/status/buildinfo', authHeader: 'Authorization', authPrefix: 'Bearer ' },
+    grafana:    { path: () => '/api/health', authHeader: 'Authorization', authPrefix: 'Bearer ' },
+    loki:       { path: () => '/loki/api/v1/status/buildinfo', authHeader: 'Authorization', authPrefix: 'Bearer ' },
+    vault:      { path: () => '/v1/sys/health', authHeader: 'X-Vault-Token' }
+};
+
+function getEndpointArrayKey(type) {
+    const map = { gitlab: 'gitlabRepos', github: 'githubRepos' };
+    return map[type] || type + 'Endpoints';
+}
+
+function getCacheKey(type) {
+    const map = { gitlab: 'gitlabMRCache', github: 'githubPRCache' };
+    return map[type] || type + 'Cache';
+}
+
+async function testApiEndpoint(type, id) {
+    const arrKey = getEndpointArrayKey(type);
+    const ep = (state[arrKey] || []).find(e => e.id === id);
+    if (!ep) return;
+
+    const conf = API_TEST_PATHS[type];
+    if (!conf) return;
+
+    const testUrl = ep.url.replace(/\/+$/, '') + conf.path(ep);
+    const headers = {};
+    if (ep.token) {
+        headers[conf.authHeader] = (conf.authPrefix || '') + ep.token;
+    }
+
+    const cacheKey = getCacheKey(type);
+    if (!state[cacheKey]) state[cacheKey] = {};
+
+    try {
+        const res = await fetch(testUrl, { method: 'GET', headers, mode: 'cors', signal: AbortSignal.timeout(10000) });
+        state[cacheKey][id] = { ok: res.ok, status: res.status, testedAt: Date.now() };
+        toast(res.ok ? `✅ ${ep.name} : connexion OK (${res.status})` : `⚠️ ${ep.name} : ${res.status}`);
+    } catch (err) {
+        const msg = err.name === 'TimeoutError' ? 'timeout' : err.name === 'TypeError' ? 'CORS/réseau' : err.message;
+        state[cacheKey][id] = { ok: false, status: msg, testedAt: Date.now() };
+        toast(`❌ ${ep.name} : ${msg}`);
+    }
+    saveState();
+    renderApiEndpointList();
+}
+
+async function testApiConnection() {
+    const type = document.getElementById('apiType').value;
+    const url = document.getElementById('apiUrl').value.trim();
+    const token = document.getElementById('apiToken').value.trim();
+    if (!url) return toast('⚠️ URL requise pour tester');
+
+    const conf = API_TEST_PATHS[type];
+    if (!conf) return toast('⚠️ Type non supporté pour le test');
+
+    // Build a temporary endpoint object for path generation
+    const tempEp = { url, token };
+    if (type === 'gitlab') tempEp.projectId = document.getElementById('apiProjectId').value.trim() || '0';
+    if (type === 'github') {
+        const ownerRepo = document.getElementById('apiProjectId').value.trim() || '/';
+        const parts = ownerRepo.split('/');
+        tempEp.owner = parts[0] || '';
+        tempEp.repo = parts[1] || '';
+    }
+
+    const testUrl = url.replace(/\/+$/, '') + conf.path(tempEp);
+    const headers = {};
+    if (token) {
+        headers[conf.authHeader] = (conf.authPrefix || '') + token;
+    }
+
+    toast('⏳ Test en cours...');
+    try {
+        const res = await fetch(testUrl, { method: 'GET', headers, mode: 'cors', signal: AbortSignal.timeout(10000) });
+        toast(res.ok ? `✅ Connexion OK (${res.status})` : `⚠️ Réponse ${res.status}`);
+    } catch (err) {
+        const msg = err.name === 'TimeoutError' ? 'timeout (10s)' : err.name === 'TypeError' ? 'CORS ou réseau injoignable' : err.message;
+        toast(`❌ Échec : ${msg}`);
+    }
 }
 
 // Backward compat — old functions redirect to unified modal

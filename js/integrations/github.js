@@ -40,7 +40,7 @@ async function fetchGithubPRs(repoId) {
     const repo = (state.githubRepos || []).find(r => r.id === repoId);
     if (!repo) return;
     const baseUrl = repo.url || 'https://api.github.com';
-    const apiUrl = `${baseUrl}/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/pulls?state=open&base=${encodeURIComponent(repo.branch)}&per_page=100`;
+    const apiUrl = `${baseUrl}/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/pulls?state=open&base=${encodeURIComponent(repo.branch)}&per_page=100`;
     const headers = { Accept: 'application/vnd.github.v3+json' };
     if (repo.token) headers['Authorization'] = `Bearer ${repo.token}`;
     try {
@@ -134,7 +134,7 @@ async function fetchGithubActions(repoId) {
     const repo = (state.githubRepos || []).find(r => r.id === repoId);
     if (!repo) return;
     const baseUrl = repo.url || 'https://api.github.com';
-    const apiUrl = `${baseUrl}/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/actions/runs?branch=${encodeURIComponent(repo.branch)}&per_page=20`;
+    const apiUrl = `${baseUrl}/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/actions/runs?branch=${encodeURIComponent(repo.branch)}&per_page=20`;
     const headers = { Accept: 'application/vnd.github.v3+json' };
     if (repo.token) headers['Authorization'] = `Bearer ${repo.token}`;
     try {
@@ -238,7 +238,7 @@ async function fetchGithubCommits(repoId) {
     if (!repo) return;
     const baseUrl = repo.url || 'https://api.github.com';
     const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
-    const apiUrl = `${baseUrl}/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/commits?sha=${encodeURIComponent(repo.branch)}&since=${since}&per_page=100`;
+    const apiUrl = `${baseUrl}/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/commits?sha=${encodeURIComponent(repo.branch)}&since=${since}&per_page=100`;
     const headers = { Accept: 'application/vnd.github.v3+json' };
     if (repo.token) headers['Authorization'] = `Bearer ${repo.token}`;
     try {
