@@ -37,7 +37,9 @@ const DEFAULT_STATE = {
     dashboardSettings: {},
     metricsOrder: {},
     chartsOrder: [],
-    infraOrder: {}
+    infraOrder: {},
+    rateLimitEvents: [],
+    rateLimitSettings: { windowSec: 60, thresholds: { warning: 50, critical: 200 } }
 };
 
 const DASHBOARD_ELEMENTS = {
@@ -91,7 +93,9 @@ const DASHBOARD_ELEMENTS = {
             'metric-openstack':   { label: 'OpenStack',               desc: 'Instances et volumes via OpenStack API', type: 'metric' },
             'chart-ansible':      { label: 'Charts Ansible',           desc: 'Donuts jobs par statut + taux de succès', type: 'chart' },
             'chart-openstack':    { label: 'Charts OpenStack',         desc: 'Donuts instances par statut + volumes', type: 'chart' },
-            'chart-downtime':     { label: 'Coût d\'indisponibilité', desc: 'Estimation coût des incidents par sévérité sur 30 jours', type: 'chart' }
+            'chart-downtime':     { label: 'Coût d\'indisponibilité', desc: 'Estimation coût des incidents par sévérité sur 30 jours', type: 'chart' },
+            'metric-rate-limit':  { label: 'Rate Limit',               desc: 'Événements de rate limiting détectés (dernières 24h) avec analyse d\'attaque', type: 'metric' },
+            'chart-rate-limit':   { label: 'Rate Limit — Fréquence',   desc: 'Timeline des événements rate limiting sur les 2 dernières heures (fenêtres 10 min)', type: 'chart' }
         }
     },
     journal: {
@@ -127,3 +131,4 @@ let ansibleRateChartInstance = null;
 let openstackInstancesChartInstance = null;
 let openstackVolumesChartInstance = null;
 let downtimeCostChartInstance = null;
+let rateLimitChartInstance = null;

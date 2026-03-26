@@ -35,6 +35,7 @@ function resetBoard() {
     state.ansibleCache = {};
     state.openstackEndpoints = [];
     state.openstackCache = {};
+    state.rateLimitEvents = [];
     state.chartData = null;
     state.bannerDismissed = false;
     if (state.trafficLight) state.trafficLight.history = [];
@@ -694,7 +695,51 @@ function loadDemoIncident() {
         fetchedAt: new Date(Date.now() - 180000).toISOString()
     };
 
-    addLog('🧪', 'Scénario INCIDENT chargé (30 machines, 20 tâches, 12 impacts, 4 repos GitLab, 3 repos GitHub, Consul, Ansible, OpenStack)');
+    // ---- Rate Limiting : scénario INCIDENT (brute force + DDoS) ----
+    state.rateLimitEvents = [];
+    const now = Date.now();
+    const rlIncident = [
+        // Brute force : une IP unique sur /api/auth, haute fréquence, bloquée
+        { ip: '185.220.101.47', endpoint: '/api/auth/login',      reqCount: 450, windowSec: 60, blocked: true,  note: 'Tor exit node — WAF rule #12 déclenché' },
+        { ip: '185.220.101.47', endpoint: '/api/auth/login',      reqCount: 390, windowSec: 60, blocked: true,  note: 'Même source, retry après blocage' },
+        { ip: '185.220.101.47', endpoint: '/api/auth/password',   reqCount: 280, windowSec: 60, blocked: true,  note: 'Rotation endpoint' },
+        { ip: '185.220.101.47', endpoint: '/api/auth/login',      reqCount: 210, windowSec: 60, blocked: true,  note: '' },
+        { ip: '185.220.101.47', endpoint: '/api/auth/login',      reqCount: 175, windowSec: 60, blocked: false, note: 'Détecté avant blocage WAF' },
+        // DDoS distribué : ~30 IPs sur /api/search
+        { ip: '91.108.4.55',    endpoint: '/api/search',          reqCount: 340, windowSec: 60, blocked: true,  note: 'DDoS — vague 1' },
+        { ip: '91.108.4.56',    endpoint: '/api/search',          reqCount: 320, windowSec: 60, blocked: true,  note: 'DDoS — vague 1' },
+        { ip: '91.108.4.57',    endpoint: '/api/search',          reqCount: 290, windowSec: 60, blocked: true,  note: 'DDoS — vague 1' },
+        { ip: '91.108.4.58',    endpoint: '/api/search',          reqCount: 310, windowSec: 60, blocked: true,  note: 'DDoS — vague 1' },
+        { ip: '45.155.205.10',  endpoint: '/api/search',          reqCount: 260, windowSec: 60, blocked: true,  note: 'DDoS — vague 2' },
+        { ip: '45.155.205.11',  endpoint: '/api/search',          reqCount: 245, windowSec: 60, blocked: true,  note: 'DDoS — vague 2' },
+        { ip: '45.155.205.12',  endpoint: '/api/search',          reqCount: 280, windowSec: 60, blocked: true,  note: 'DDoS — vague 2' },
+        { ip: '45.155.205.13',  endpoint: '/api/search',          reqCount: 190, windowSec: 60, blocked: false, note: 'Non bloqué — sous seuil auto' },
+        { ip: '198.54.117.200', endpoint: '/api/search',          reqCount: 220, windowSec: 60, blocked: true,  note: '' },
+        { ip: '198.54.117.201', endpoint: '/api/search',          reqCount: 200, windowSec: 60, blocked: true,  note: '' },
+        { ip: '185.130.5.90',   endpoint: '/api/search',          reqCount: 230, windowSec: 60, blocked: true,  note: 'DDoS — vague 3' },
+        { ip: '185.130.5.91',   endpoint: '/api/search',          reqCount: 210, windowSec: 60, blocked: true,  note: 'DDoS — vague 3' },
+        { ip: '185.130.5.92',   endpoint: '/api/search',          reqCount: 180, windowSec: 60, blocked: false, note: '' },
+        // Scan / énumération : une IP parcourant des endpoints
+        { ip: '104.21.55.200',  endpoint: '/api/users/1',         reqCount: 80,  windowSec: 60, blocked: false, note: 'Scan OWASP ZAP détecté' },
+        { ip: '104.21.55.200',  endpoint: '/api/users/2',         reqCount: 75,  windowSec: 60, blocked: false, note: '' },
+        { ip: '104.21.55.200',  endpoint: '/api/admin',           reqCount: 70,  windowSec: 60, blocked: true,  note: 'Tentative accès admin' },
+        { ip: '104.21.55.200',  endpoint: '/api/config',          reqCount: 65,  windowSec: 60, blocked: true,  note: '' },
+        { ip: '104.21.55.200',  endpoint: '/.env',                reqCount: 55,  windowSec: 60, blocked: true,  note: 'Scan fichiers sensibles' },
+        { ip: '104.21.55.200',  endpoint: '/api/debug',           reqCount: 60,  windowSec: 60, blocked: true,  note: '' },
+        { ip: '104.21.55.200',  endpoint: '/metrics',             reqCount: 45,  windowSec: 60, blocked: true,  note: '' },
+    ];
+    // Timestamps étalés sur les 90 dernières minutes
+    rlIncident.forEach((e, i) => {
+        state.rateLimitEvents.push({
+            id: uid(),
+            ts: new Date(now - (rlIncident.length - i) * 210000 + Math.random() * 60000).toISOString(),
+            ip: e.ip, endpoint: e.endpoint,
+            reqCount: e.reqCount, windowSec: e.windowSec,
+            blocked: e.blocked, note: e.note
+        });
+    });
+
+    addLog('🧪', 'Scénario INCIDENT chargé (30 machines, 20 tâches, 12 impacts, 4 repos GitLab, 3 repos GitHub, Consul, Ansible, OpenStack, Rate Limiting)');
     saveState();
     renderAll();
     toast('🔴 Scénario incident chargé');
@@ -1028,7 +1073,26 @@ function loadDemoGreen() {
         fetchedAt: new Date(Date.now() - 180000).toISOString()
     };
 
-    addLog('🧪', 'Scénario NOMINAL chargé (20 machines, 14 tâches, 0 impact actif, 2 repos GitLab, 2 repos GitHub, Consul, Ansible, OpenStack)');
+    // ---- Rate Limiting : scénario NOMINAL (bruit de fond faible) ----
+    state.rateLimitEvents = [];
+    const nowGreen = Date.now();
+    const rlNominal = [
+        { ip: '62.210.22.44',  endpoint: '/api/auth/login', reqCount: 65, windowSec: 60, blocked: true,  note: 'Tentative fail2ban déclenchée' },
+        { ip: '51.159.50.100', endpoint: '/api/search',     reqCount: 55, windowSec: 60, blocked: false, note: 'Bot crawler — user-agent suspect' },
+        { ip: '62.210.22.44',  endpoint: '/api/auth/login', reqCount: 48, windowSec: 60, blocked: true,  note: 'Retry après 10 min' },
+        { ip: '176.31.5.150',  endpoint: '/api/data',       reqCount: 52, windowSec: 60, blocked: false, note: 'Monitoring externe — whitelist à envisager' },
+    ];
+    rlNominal.forEach((e, i) => {
+        state.rateLimitEvents.push({
+            id: uid(),
+            ts: new Date(nowGreen - (rlNominal.length - i) * 900000).toISOString(),
+            ip: e.ip, endpoint: e.endpoint,
+            reqCount: e.reqCount, windowSec: e.windowSec,
+            blocked: e.blocked, note: e.note
+        });
+    });
+
+    addLog('🧪', 'Scénario NOMINAL chargé (20 machines, 14 tâches, 0 impact actif, 2 repos GitLab, 2 repos GitHub, Consul, Ansible, OpenStack, Rate Limiting)');
     saveState();
     renderAll();
     toast('🟢 Scénario nominal chargé — tout est vert !');

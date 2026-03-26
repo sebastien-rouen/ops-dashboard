@@ -52,6 +52,7 @@ function renderAll() {
     renderConsulMetric();
     renderAnsibleMetric();
     renderOpenstackMetric();
+    renderRateLimitMetric();
     updateMetricGroupVisibility();
     renderLog();
     updateGlobalStatus();
@@ -63,6 +64,7 @@ function renderAll() {
     updateAnsibleCharts();
     updateOpenstackCharts();
     updateDowntimeCostChart();
+    updateRateLimitChart();
 }
 
 if (document.readyState === 'loading') {

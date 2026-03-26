@@ -65,7 +65,7 @@ function initChartsSortable() {
         handle: '.drag-handle',
         ghostClass: 'sortable-ghost',
         chosenClass: 'sortable-chosen',
-        draggable: '.chart-container, .chart-row-dual',
+        draggable: '.chart-container, .chart-row-dual, .chart-row-quad',
         filter: '.charts-layout-toggle',
         onEnd: saveChartsOrder
     });

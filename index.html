@@ -291,6 +291,15 @@
                 </div>
                 <div class="metric-glow"></div>
             </div>
+            <div class="metric-card metric-card-security metric-clickable" onclick="openRateLimitDetail()" title="Rate limiting — attaques et fréquences détectées (24h)" data-settings-id="metric-rate-limit" data-views="ops reseau apps">
+                <div class="metric-icon">🛡️</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricRateLimit">0</div>
+                    <div class="metric-label">Rate Limit</div>
+                    <div class="metric-mini-summary" id="metricRateLimitSummary"></div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
             <div class="metric-card metric-card-consul metric-clickable" onclick="openConsulDetail()" title="Services & Nodes Consul" data-settings-id="metric-consul">
                 <div class="metric-icon">🟢</div>
                 <div class="metric-content">
@@ -379,6 +388,12 @@
             <div id="pricingChartLegend" class="pricing-legend"></div>
             <div class="pricing-insight" id="pricingInsight"></div>
         </div>
+        <div class="chart-container" data-views="ops reseau apps" data-settings-id="chart-rate-limit">
+            <h3>🛡️ Rate Limiting — Fréquence des attaques (2h)</h3>
+            <div class="chart-wrap">
+                <canvas id="rateLimitChart"></canvas>
+            </div>
+        </div>
         <div class="chart-container chart-container-wide" data-views="ops reseau apps" data-settings-id="chart-downtime">
             <h3>💸 Coût d'indisponibilité</h3>
             <div class="downtime-controls">
@@ -404,28 +419,30 @@
             </div>
             <div class="downtime-insight" id="downtimeInsight"></div>
         </div>
-        <div class="chart-row-dual" data-views="ops reseau" data-settings-id="chart-ansible">
-            <div class="chart-container chart-container-half">
-                <h3>🤖 Ansible — Jobs</h3>
-                <div class="chart-wrap chart-wrap-doughnut"><canvas id="ansibleJobsChart"></canvas></div>
-                <div id="ansibleJobsLegend" class="infra-status-legend"></div>
+        <div class="chart-row-quad" data-views="ops reseau">
+            <div data-settings-id="chart-ansible" style="display: contents;">
+                <div class="chart-container chart-container-half">
+                    <h3>🤖 Ansible — Jobs</h3>
+                    <div class="chart-wrap chart-wrap-doughnut"><canvas id="ansibleJobsChart"></canvas></div>
+                    <div id="ansibleJobsLegend" class="infra-status-legend"></div>
+                </div>
+                <div class="chart-container chart-container-half">
+                    <h3>🤖 Ansible — Taux succès</h3>
+                    <div class="chart-wrap chart-wrap-doughnut"><canvas id="ansibleRateChart"></canvas></div>
+                    <div id="ansibleRateLegend" class="infra-status-legend"></div>
+                </div>
             </div>
-            <div class="chart-container chart-container-half">
-                <h3>🤖 Ansible — Taux succès</h3>
-                <div class="chart-wrap chart-wrap-doughnut"><canvas id="ansibleRateChart"></canvas></div>
-                <div id="ansibleRateLegend" class="infra-status-legend"></div>
-            </div>
-        </div>
-        <div class="chart-row-dual" data-views="ops reseau" data-settings-id="chart-openstack">
-            <div class="chart-container chart-container-half">
-                <h3>☁️ OpenStack — Instances</h3>
-                <div class="chart-wrap chart-wrap-doughnut"><canvas id="openstackInstancesChart"></canvas></div>
-                <div id="openstackInstancesLegend" class="infra-status-legend"></div>
-            </div>
-            <div class="chart-container chart-container-half">
-                <h3>☁️ OpenStack — Volumes</h3>
-                <div class="chart-wrap chart-wrap-doughnut"><canvas id="openstackVolumesChart"></canvas></div>
-                <div id="openstackVolumesLegend" class="infra-status-legend"></div>
+            <div data-settings-id="chart-openstack" style="display: contents;">
+                <div class="chart-container chart-container-half">
+                    <h3>☁️ OpenStack — Instances</h3>
+                    <div class="chart-wrap chart-wrap-doughnut"><canvas id="openstackInstancesChart"></canvas></div>
+                    <div id="openstackInstancesLegend" class="infra-status-legend"></div>
+                </div>
+                <div class="chart-container chart-container-half">
+                    <h3>☁️ OpenStack — Volumes</h3>
+                    <div class="chart-wrap chart-wrap-doughnut"><canvas id="openstackVolumesChart"></canvas></div>
+                    <div id="openstackVolumesLegend" class="infra-status-legend"></div>
+                </div>
             </div>
         </div>
     </section>
@@ -1099,6 +1116,22 @@ JSON: tableau [{name, type, status, ip}]'></textarea>
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeModal('modalCFR')">Fermer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Rate Limit Detail -->
+<div class="modal-overlay" id="modalRateLimit">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>🛡️ Rate Limiting — Analyse d'attaques</h3>
+            <button class="btn-close" onclick="closeModal('modalRateLimit')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="rateLimitDetailContent" class="metric-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalRateLimit')">Fermer</button>
         </div>
     </div>
 </div>

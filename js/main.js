@@ -3,6 +3,7 @@
 (async function loadDashboardModules() {
     const modules = [
         // Core (ordre strict)
+        'js/core/config.js',
         'js/core/utils.js',
         'js/core/state.js',
         'js/core/core.js',
@@ -18,6 +19,7 @@
         'js/components/traffic-light.js',
         'js/components/pricing.js',
         'js/components/sre.js',
+        'js/components/rate-limit.js',
 
         // Integrations
         'js/integrations/gitlab.js',

@@ -84,18 +84,31 @@
     grid-column: 1 / -1;
 }
 
-/* Dual donut row (Ansible, OpenStack) */
+/* Dual donut row */
 .chart-row-dual {
     grid-column: 1 / -1;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
 }
+
+/* Quad donut row (Ansible + OpenStack sur 4 colonnes) */
+.chart-row-quad {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
 .chart-container-half {
     min-width: 0;
 }
+@media (max-width: 900px) {
+    .chart-row-quad { grid-template-columns: 1fr 1fr; }
+}
 @media (max-width: 600px) {
     .chart-row-dual { grid-template-columns: 1fr; }
+    .chart-row-quad { grid-template-columns: 1fr; }
 }
 
 .chart-wrap-pricing {

@@ -61,6 +61,304 @@
     box-shadow: 0 12px 32px rgba(14, 165, 233, 0.2);
 }
 
+/* ========== METRIC CARD: SECURITY / RATE LIMIT ========== */
+.metric-card-security {
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.metric-card-security .metric-value {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.metric-card-security .metric-glow {
+    background: #f59e0b;
+}
+
+.metric-card-security:hover {
+    border-color: rgba(245, 158, 11, 0.6);
+    box-shadow: 0 12px 32px rgba(245, 158, 11, 0.2);
+}
+
+.metric-card-security.rl-has-alert {
+    border-color: rgba(245, 158, 11, 0.7);
+    animation: pulse-warning 2.5s ease-in-out infinite;
+}
+
+.metric-card-security.rl-has-critical {
+    border-color: rgba(220, 38, 38, 0.7);
+    box-shadow: 0 12px 32px rgba(220, 38, 38, 0.25);
+    animation: pulse-warning 1.5s ease-in-out infinite;
+}
+
+/* ========== RATE LIMIT FORM ========== */
+.rl-add-form {
+    background: var(--bg-card);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-left: 3px solid rgba(245, 158, 11, 0.65);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+.rl-form-header {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 16px;
+    background: rgba(245, 158, 11, 0.06);
+    border-bottom: 1px solid rgba(245, 158, 11, 0.1);
+}
+
+.rl-form-header-icon { font-size: 0.95rem; line-height: 1; }
+
+.rl-form-header-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.02em;
+}
+
+.rl-form-header-hint {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    margin-left: auto;
+    font-style: italic;
+}
+
+/* Grille des champs : 2 lignes */
+.rl-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1.4fr 2fr;
+    gap: 10px;
+    padding: 12px 16px;
+    align-items: end;
+}
+
+.rl-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.rl-field-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding-left: 2px;
+}
+
+.rl-input {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 0.82rem;
+    padding: 7px 10px;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.rl-input:focus {
+    border-color: rgba(245, 158, 11, 0.6);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.1);
+}
+
+.rl-input::placeholder { color: var(--text-muted); opacity: 0.7; }
+.rl-input.rl-input-small { width: 60px; flex-shrink: 0; }
+
+/* Groupe fréquence inline */
+.rl-rate-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.rl-rate-group .rl-input { flex: 1; min-width: 50px; }
+.rl-rate-group .rl-input-small { flex: 0 0 58px; width: 58px; text-align: center; }
+
+.rl-rate-sep, .rl-rate-unit {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    font-weight: 500;
+}
+
+/* Barre d'actions */
+.rl-form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 16px;
+    background: rgba(0, 0, 0, 0.12);
+    border-top: 1px solid var(--border);
+    gap: 12px;
+}
+
+/* Toggle switch "Bloqué" */
+.rl-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.rl-toggle-input { display: none; }
+
+.rl-toggle-track {
+    display: inline-block;
+    position: relative;
+    width: 34px;
+    height: 19px;
+    background: var(--border);
+    border-radius: 10px;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+
+.rl-toggle-track::after {
+    content: '';
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    top: 2px;
+    left: 2px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.rl-toggle-input:checked + .rl-toggle-track {
+    background: rgba(220, 38, 38, 0.8);
+}
+
+.rl-toggle-input:checked + .rl-toggle-track::after {
+    transform: translateX(15px);
+    background: #fff;
+}
+
+.rl-toggle-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.rl-toggle-wrap:has(.rl-toggle-input:checked) .rl-toggle-label {
+    color: var(--red);
+}
+
+/* Seuils d'alerte — cartes */
+.rl-thresholds {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.rl-threshold-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 14px;
+    flex: 1;
+    min-width: 140px;
+}
+
+.rl-thresh-warn { border-left: 3px solid rgba(245, 158, 11, 0.65); }
+.rl-thresh-crit { border-left: 3px solid rgba(220, 38, 38, 0.65); }
+
+.rl-thresh-icon { font-size: 1rem; flex-shrink: 0; line-height: 1; }
+
+.rl-thresh-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+}
+
+.rl-thresh-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+}
+
+.rl-thresh-input-row {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+}
+
+.rl-thresh-input {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    font-size: 1.05rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    width: 68px;
+    outline: none;
+    text-align: center;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.rl-thresh-warn .rl-thresh-input:focus {
+    border-color: rgba(245, 158, 11, 0.6);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.1);
+}
+
+.rl-thresh-crit .rl-thresh-input:focus {
+    border-color: rgba(220, 38, 38, 0.6);
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+}
+
+.rl-thresh-unit {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+/* Bouton supprimer événement */
+.rl-btn-remove {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    opacity: 0.5;
+    transition: opacity var(--transition), color var(--transition);
+    margin-left: auto;
+}
+
+.rl-btn-remove:hover {
+    opacity: 1;
+    color: var(--red);
+}
+
+@media (max-width: 700px) {
+    .rl-form-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .rl-form-header-hint { display: none; }
+}
+
 /* ========== GITLAB CONFIG MODAL ========== */
 .gitlab-repo-list {
     display: flex;

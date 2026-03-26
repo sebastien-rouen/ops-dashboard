@@ -54,6 +54,7 @@ Organisation en 3 couches :
 |---------|------|----------------|
 | `main.js` | Loader séquentiel — charge tous les modules dans l'ordre | — |
 | **`core/`** | | |
+| `core/config.js` | **Constantes globales non persistées** — tous les paramètres tunables (seuils, tailles, durées) | `DASHBOARD_CONFIG` |
 | `core/utils.js` | Utilitaires purs + toast + modal helpers | `uid()`, `esc()`, `toast()`, `timeAgo()`, `openModal()`, `closeModal()` |
 | `core/state.js` | Constantes, état global, persistance | `STORAGE_KEY`, `DEFAULT_STATE`, `DASHBOARD_ELEMENTS`, `loadState()`, `saveState()` |
 | `core/core.js` | Thème, compact, log, notifications, raccourcis, layout charts | `toggleTheme()`, `addLog()`, `toggleCompactMode()`, `applyChartsLayout()` |
@@ -68,6 +69,7 @@ Organisation en 3 couches :
 | `components/traffic-light.js` | Engine TL + settings + widget + chart | `computeTrafficLight()`, `updateTrafficLight()`, `updateTrafficLightChart()`, `openTrafficLightSettings()` |
 | `components/pricing.js` | Données et chart pricing | `PRICING_DATA`, `updatePricingChart()`, `renderPricingLegend()` |
 | `components/sre.js` | Indicateurs SRE (MTTR, Deploy Freq, Change Failure Rate) | `computeMTTR()`, `renderMTTRMetric()`, `computeDeployFrequency()`, `renderDeployFrequencyMetric()`, `computeChangeFailureRate()`, `renderChangeFailureRateMetric()` |
+| `components/rate-limit.js` | Rate limiting — saisie manuelle d'événements, analyse d'attaque, alertes, chart | `computeRateLimitStats()`, `detectAttackPattern()`, `renderRateLimitMetric()`, `addRateLimitEvent()`, `openRateLimitDetail()`, `updateRateLimitChart()` |
 | `components/export.js` | Export/rédiger + channels + mdToHtml | `generateMarkdown()`, `generateSlack()`, `generateMattermost()`, `mdToHtml()`, `renderChannels()` |
 | `components/filters-views.js` | Filtres, vues, import sources, dashboard settings, sidebar channels | `getActiveFilters()`, `applyAdvancedFilters()`, `switchView()`, `openDashboardSettings()`, `initDsHideButtons()`, `dsSaveChannels()` |
 | `components/demo.js` | Données de démo | `loadDemoIncident()`, `loadDemoGreen()`, `resetBoard()` |
@@ -78,8 +80,9 @@ Organisation en 3 couches :
 
 ### Ordre de chargement JS (géré par `main.js`)
 
-1. `core/utils.js` — fonctions pures, aucune dépendance
-2. `core/state.js` — état global, doit être chargé avant tout composant
+1. `core/config.js` — constantes globales, aucune dépendance (**toujours en premier**)
+2. `core/utils.js` — fonctions pures, aucune dépendance
+3. `core/state.js` — état global, doit être chargé avant tout composant
 3. `core/core.js` — dépend de utils + state
 4. `components/*` + `integrations/*` — composants métier (ordre libre entre eux)
 5. `core/init.js` — **toujours en dernier**, lance `renderAll()`
@@ -226,9 +229,25 @@ Ces 3 indicateurs correspondent aux métriques DORA (DevOps Research and Assessm
 | Ansible runs | Configuration drift | Errors | `integrations/integrations.js` |
 | OpenStack instances/volumes | Cloud resources | Saturation | `integrations/integrations.js` |
 
+| Rate Limit | Sécurité / Golden Signals (Traffic) | Traffic | `components/rate-limit.js` |
+
 ### Alerting — Niveaux de sévérité
 
 Alignés sur l'impact utilisateur (implémenté dans le Traffic Light + prod alert) :
 - **Critical** → Impact utilisateur immédiat, intervention requise (prod-border pulse + background rouge)
 - **Warning** → Dégradation, risque d'escalade
 - **Info** → À surveiller, pas d'action immédiate
+
+## Config centralisée (`core/config.js`)
+
+**Règle** : toute valeur magique (seuil, durée, taille de buffer, nombre de buckets…) doit être déclarée dans `DASHBOARD_CONFIG` et **jamais** hardcodée dans la logique métier.
+
+| Clé | Valeur par défaut | Description |
+|-----|-------------------|-------------|
+| `rateLimitMaxEvents` | `500` | Nb max d'événements conservés en localStorage |
+| `rateLimitStatsWindowMs` | `86400000` (24h) | Fenêtre de calcul des stats rate-limit |
+| `rateLimitChartBuckets` | `12` | Nombre de fenêtres sur le chart |
+| `rateLimitChartBucketMs` | `600000` (10 min) | Durée d'une fenêtre sur le chart |
+| `rateLimitDefaultWarning` | `50` | Seuil warning req/min (défaut, écrasable par l'utilisateur) |
+| `rateLimitDefaultCritical` | `200` | Seuil critique req/min (défaut, écrasable par l'utilisateur) |
+| `rateLimitDefaultWindowSec` | `60` | Fenêtre par défaut du formulaire (secondes) |

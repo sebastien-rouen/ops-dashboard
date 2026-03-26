@@ -676,6 +676,7 @@
 .metric-card:hover .drag-handle,
 .chart-container:hover .drag-handle,
 .chart-row-dual:hover .drag-handle,
+.chart-row-quad:hover .drag-handle,
 .infra-row:hover .drag-handle { opacity: 0.7; }
 .drag-handle:hover { opacity: 1 !important; }
 
