@@ -52,6 +52,9 @@ function renderAll() {
     renderConsulMetric();
     renderAnsibleMetric();
     renderOpenstackMetric();
+    renderPrometheusMetric();
+    renderLokiMetric();
+    renderTempoMetric();
     renderRateLimitMetric();
     updateMetricGroupVisibility();
     renderLog();

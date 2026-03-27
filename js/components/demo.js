@@ -739,7 +739,22 @@ function loadDemoIncident() {
         });
     });
 
-    addLog('🧪', 'Scénario INCIDENT chargé (30 machines, 20 tâches, 12 impacts, 4 repos GitLab, 3 repos GitHub, Consul, Ansible, OpenStack, Rate Limiting)');
+    // ---- Prometheus : 4 targets down, 5 alertes ----
+    const promEpIdI = uid();
+    state.prometheusEndpoints = [{ id: promEpIdI, name: 'Prometheus Prod', url: 'https://prometheus.example.com', token: '' }];
+    state.prometheusCache = { [promEpIdI]: DEMO_PROMETHEUS_INCIDENT() };
+
+    // ---- Loki : down, spike d'erreurs ----
+    const lokiEpIdI = uid();
+    state.lokiEndpoints = [{ id: lokiEpIdI, name: 'Loki Prod', url: 'https://loki.example.com', token: '' }];
+    state.lokiCache = { [lokiEpIdI]: DEMO_LOKI_INCIDENT() };
+
+    // ---- Tempo : 26% erreur, P95 1240ms ----
+    const tempoEpIdI = uid();
+    state.tempoEndpoints = [{ id: tempoEpIdI, name: 'Tempo Prod', url: 'https://tempo.example.com', token: '' }];
+    state.tempoCache = { [tempoEpIdI]: DEMO_TEMPO_INCIDENT() };
+
+    addLog('🧪', 'Scénario INCIDENT chargé (30 machines, 20 tâches, 12 impacts, 4 repos GitLab, 3 repos GitHub, Consul, Ansible, OpenStack, Rate Limiting, Prometheus, Loki, Tempo)');
     saveState();
     renderAll();
     toast('🔴 Scénario incident chargé');
@@ -1092,8 +1107,112 @@ function loadDemoGreen() {
         });
     });
 
-    addLog('🧪', 'Scénario NOMINAL chargé (20 machines, 14 tâches, 0 impact actif, 2 repos GitLab, 2 repos GitHub, Consul, Ansible, OpenStack, Rate Limiting)');
+    // ---- Prometheus : 14/14 targets, 0 alerte ----
+    const promEpIdG = uid();
+    state.prometheusEndpoints = [{ id: promEpIdG, name: 'Prometheus Prod', url: 'https://prometheus.example.com', token: '' }];
+    state.prometheusCache = { [promEpIdG]: DEMO_PROMETHEUS_NOMINAL() };
+
+    // ---- Loki : 24 streams, 47 erreurs ----
+    const lokiEpIdG = uid();
+    state.lokiEndpoints = [{ id: lokiEpIdG, name: 'Loki Prod', url: 'https://loki.example.com', token: '' }];
+    state.lokiCache = { [lokiEpIdG]: DEMO_LOKI_NOMINAL() };
+
+    // ---- Tempo : 1 432 traces, 6.1% erreur ----
+    const tempoEpIdG = uid();
+    state.tempoEndpoints = [{ id: tempoEpIdG, name: 'Tempo Prod', url: 'https://tempo.example.com', token: '' }];
+    state.tempoCache = { [tempoEpIdG]: DEMO_TEMPO_NOMINAL() };
+
+    addLog('🧪', 'Scénario NOMINAL chargé (20 machines, 14 tâches, 0 impact actif, 2 repos GitLab, 2 repos GitHub, Consul, Ansible, OpenStack, Rate Limiting, Prometheus, Loki, Tempo)');
     saveState();
     renderAll();
     toast('🟢 Scénario nominal chargé — tout est vert !');
+}
+
+function loadDemoObservability() {
+    closeDemoMenuOnClick();
+    if (state.infra.length > 0 || state.tasks.length > 0 || state.impacts.length > 0) {
+        if (!confirm('⚠️ Cela remplacera toutes vos données actuelles.\nContinuer ?')) return;
+    }
+
+    // Reset complet — seuls les 3 endpoints obs seront présents
+    state.impacts = [];
+    state.tasks = [];
+    state.infra = [];
+    state.importSources = [];
+    state.gitlabRepos = [];
+    state.gitlabMRCache = {};
+    state.gitlabPipelinesCache = {};
+    state.gitlabCommitsCache = {};
+    state.githubRepos = [];
+    state.githubPRCache = {};
+    state.githubActionsCache = {};
+    state.githubCommitsCache = {};
+    state.consulEndpoints = [];
+    state.consulCache = {};
+    state.ansibleEndpoints = [];
+    state.ansibleCache = {};
+    state.openstackEndpoints = [];
+    state.openstackCache = {};
+    state.vaultEndpoints = [];
+    state.vaultCache = {};
+    state.grafanaEndpoints = [];
+    state.grafanaCache = {};
+    state.rateLimitEvents = [];
+    state.chartData = null;
+
+    // ---- Prometheus : 14/14 targets, 0 alerte ----
+    const promEpId = uid();
+    state.prometheusEndpoints = [{ id: promEpId, name: 'Prometheus Prod', url: 'https://prometheus.example.com', token: '' }];
+    state.prometheusCache = { [promEpId]: DEMO_PROMETHEUS_NOMINAL() };
+
+    // ---- Loki : 24 streams, 47 erreurs ----
+    const lokiEpId = uid();
+    state.lokiEndpoints = [{ id: lokiEpId, name: 'Loki Prod', url: 'https://loki.example.com', token: '' }];
+    state.lokiCache = { [lokiEpId]: DEMO_LOKI_NOMINAL() };
+
+    // ---- Tempo : 1 432 traces, 6.1% erreur ----
+    const tempoEpId = uid();
+    state.tempoEndpoints = [{ id: tempoEpId, name: 'Tempo Prod', url: 'https://tempo.example.com', token: '' }];
+    state.tempoCache = { [tempoEpId]: DEMO_TEMPO_NOMINAL() };
+
+    state.log = [
+        { time: new Date(Date.now() - 60000).toISOString(),    icon: '📊', msg: 'Prometheus Prod — connexion OK (200)' },
+        { time: new Date(Date.now() - 60000).toISOString(),    icon: '📋', msg: 'Loki Prod — connexion OK (200)' },
+        { time: new Date(Date.now() - 60000).toISOString(),    icon: '🔍', msg: 'Tempo Prod — connexion OK (200)' },
+    ];
+
+    // Masquer tout ce qui n'est pas lié à la stack observabilité
+    // metric-prometheus, metric-loki, metric-tempo restent visibles
+    state.dashboardSettings = {
+        // Kanban
+        'metric-todo': false, 'metric-wip': false, 'metric-done': false, 'metric-completion': false,
+        'section-kanban': false,
+        // Infra
+        'metric-infra': false, 'metric-uptime': false,
+        'section-infra': false, 'chart-infrastatus': false,
+        // Impacts
+        'metric-impacts': false, 'metric-resolved': false, 'header-impacts': false,
+        'section-history': false, 'chart-timeline': false,
+        // GitLab / GitHub
+        'metric-gitlab': false, 'metric-gitlab-pipelines': false, 'metric-gitlab-commits': false,
+        'metric-github-pr': false, 'metric-github-actions': false, 'metric-github-commits': false,
+        // SRE DORA
+        'metric-mttr': false, 'metric-deploy-freq': false, 'metric-cfr': false,
+        // Sécurité
+        'metric-rate-limit': false, 'chart-rate-limit': false,
+        // Consul / Ansible / OpenStack
+        'metric-consul': false, 'metric-ansible': false, 'metric-openstack': false,
+        'chart-ansible': false, 'chart-openstack': false,
+        // Charts sans données
+        'chart-activity': false, 'chart-priority': false,
+        'chart-trafficlight': false, 'chart-pricing': false, 'chart-downtime': false,
+        // metric-prometheus, metric-loki, metric-tempo : visibles (pas listés ici)
+    };
+
+    addLog('🧪', 'Scénario OBSERVABILITÉ chargé (Prometheus, Loki, Tempo)');
+    saveState();
+    renderAll();
+    applyDashboardSettings();
+    openApiConfig();
+    toast('🔭 Stack observabilité chargée — 3 endpoints configurés');
 }

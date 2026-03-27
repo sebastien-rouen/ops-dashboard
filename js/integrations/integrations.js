@@ -108,6 +108,473 @@ function renderConsulMetric() {
     }
 }
 
+function renderPrometheusMetric() {
+    const el = document.getElementById('metricPrometheus');
+    const summaryEl = document.getElementById('metricPrometheusSummary');
+    if (!el) return;
+    const eps = state.prometheusEndpoints || [];
+    const cache = state.prometheusCache || {};
+    const card = el.closest('.metric-card');
+    if (eps.length === 0) { if (card) { card.classList.add('no-source'); card.classList.remove('has-alert', 'has-critical'); } el.textContent = '—'; if (summaryEl) summaryEl.innerHTML = ''; return; }
+    if (card) card.classList.remove('no-source');
+    let targetsUp = 0, targetsTotal = 0, alertsFiring = 0, hasCritical = false;
+    eps.forEach(ep => {
+        const c = cache[ep.id];
+        if (!c) return;
+        targetsUp += c.targetsUp ?? (c.ok ? 1 : 0);
+        targetsTotal += c.targetsTotal ?? 1;
+        alertsFiring += c.alertsFiring ?? 0;
+        if ((c.alerts || []).some(a => a.severity === 'critical')) hasCritical = true;
+    });
+    el.textContent = targetsTotal > 0 ? `${targetsUp}/${targetsTotal}` : '—';
+    if (card) {
+        card.classList.toggle('has-critical', hasCritical && alertsFiring > 0);
+        card.classList.toggle('has-alert', !hasCritical && alertsFiring > 0);
+    }
+    if (summaryEl) {
+        const alertPart = alertsFiring > 0
+            ? `<span class="mms-sep"></span><span class="mms-dot ${hasCritical ? 'red' : 'yellow'}"></span>${alertsFiring} alerte${alertsFiring > 1 ? 's' : ''}`
+            : `<span class="mms-sep"></span><span class="mms-dot green"></span>0 alerte`;
+        summaryEl.innerHTML = `<span class="mms-dot ${targetsUp < targetsTotal ? 'red' : 'green'}"></span>${targetsUp} up${alertPart}`;
+    }
+}
+
+function renderLokiMetric() {
+    const el = document.getElementById('metricLoki');
+    const summaryEl = document.getElementById('metricLokiSummary');
+    if (!el) return;
+    const eps = state.lokiEndpoints || [];
+    const cache = state.lokiCache || {};
+    const card = el.closest('.metric-card');
+    if (eps.length === 0) { if (card) { card.classList.add('no-source'); card.classList.remove('has-critical'); } el.textContent = '—'; if (summaryEl) summaryEl.innerHTML = ''; return; }
+    if (card) card.classList.remove('no-source');
+    let errorCount = 0, warnCount = 0, streamsActive = 0, hasData = false;
+    eps.forEach(ep => {
+        const c = cache[ep.id];
+        if (!c) return;
+        hasData = true;
+        errorCount += c.errorCount ?? 0;
+        warnCount += c.warnCount ?? 0;
+        streamsActive += c.streamsActive ?? 0;
+    });
+    const isCritical = !eps.every(ep => cache[ep.id]?.ok !== false);
+    if (card) card.classList.toggle('has-critical', isCritical);
+    el.textContent = hasData ? (errorCount >= 1000 ? (errorCount / 1000).toFixed(1) + 'k' : errorCount) + ' err' : '—';
+    if (summaryEl) {
+        summaryEl.innerHTML = `<span class="mms-dot ${errorCount > 1000 ? 'red' : errorCount > 100 ? 'yellow' : 'green'}"></span>${streamsActive} streams`
+            + (warnCount > 0 ? `<span class="mms-sep"></span><span class="mms-dot yellow"></span>${warnCount >= 1000 ? (warnCount / 1000).toFixed(1) + 'k' : warnCount} warn` : '');
+    }
+}
+
+function renderTempoMetric() {
+    const el = document.getElementById('metricTempo');
+    const summaryEl = document.getElementById('metricTempoSummary');
+    if (!el) return;
+    const eps = state.tempoEndpoints || [];
+    const cache = state.tempoCache || {};
+    const card = el.closest('.metric-card');
+    if (eps.length === 0) { if (card) { card.classList.add('no-source'); card.classList.remove('has-critical'); } el.textContent = '—'; if (summaryEl) summaryEl.innerHTML = ''; return; }
+    if (card) card.classList.remove('no-source');
+    let tracesTotal = 0, tracesError = 0, p95Sum = 0, p95Count = 0, hasData = false;
+    eps.forEach(ep => {
+        const c = cache[ep.id];
+        if (!c) return;
+        hasData = true;
+        tracesTotal += c.tracesTotal ?? 0;
+        tracesError += c.tracesError ?? 0;
+        if (c.p95LatencyMs != null) { p95Sum += c.p95LatencyMs; p95Count++; }
+    });
+    const errorRate = tracesTotal > 0 ? (tracesError / tracesTotal * 100) : 0;
+    const isCritical = errorRate > 15 || (p95Count > 0 && p95Sum / p95Count > 800);
+    if (card) card.classList.toggle('has-critical', isCritical);
+    el.textContent = hasData ? tracesTotal.toLocaleString('fr-FR') : '—';
+    if (summaryEl) {
+        const p95 = p95Count > 0 ? Math.round(p95Sum / p95Count) : null;
+        summaryEl.innerHTML = `<span class="mms-dot ${errorRate > 15 ? 'red' : errorRate > 5 ? 'yellow' : 'green'}"></span>${errorRate.toFixed(1)}% err`
+            + (p95 != null ? `<span class="mms-sep"></span>P95 ${p95 >= 1000 ? (p95 / 1000).toFixed(1) + 's' : p95 + 'ms'}` : '');
+    }
+}
+
+// ==================== PROMETHEUS DETAIL ====================
+function openPrometheusDetail() { renderPrometheusDetailContent(); openModal('modalPrometheusDetail'); }
+
+function togglePrometheusPanel(panelId) {
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+    const wasOpen = panel.classList.contains('open');
+    document.querySelectorAll('#prometheusDetailContent .sre-expand-panel').forEach(p => p.classList.remove('open'));
+    document.querySelectorAll('#prometheusDetailContent .sre-stat.clickable').forEach(s => s.classList.remove('active'));
+    if (!wasOpen) {
+        panel.classList.add('open');
+        const stat = document.querySelector(`[data-prom-panel="${panelId}"]`);
+        if (stat) stat.classList.add('active');
+    }
+}
+
+function renderPrometheusDetailContent() {
+    const content = document.getElementById('prometheusDetailContent');
+    if (!content) return;
+    const eps = state.prometheusEndpoints || [];
+    const cache = state.prometheusCache || {};
+    if (eps.length === 0) { content.innerHTML = '<div class="md-empty">Aucun endpoint Prometheus configuré — <a href="#" onclick="event.preventDefault();closeModal(\'modalPrometheusDetail\');openApiConfig()">configurer</a></div>'; return; }
+
+    let targetsUp = 0, targetsTotal = 0, alertsFiring = 0;
+    const allAlerts = [];
+    const allTargetsDown = [];
+    eps.forEach(ep => {
+        const c = cache[ep.id];
+        if (!c) return;
+        targetsUp += c.targetsUp ?? (c.ok ? 1 : 0);
+        targetsTotal += c.targetsTotal ?? 1;
+        alertsFiring += c.alertsFiring ?? 0;
+        (c.alerts || []).forEach(a => allAlerts.push({ ...a, endpoint: ep.name }));
+        const down = (c.targetsTotal ?? 1) - (c.targetsUp ?? (c.ok ? 1 : 0));
+        if (down > 0) allTargetsDown.push({ endpoint: ep.name, count: down });
+    });
+    const targetsDown = targetsTotal - targetsUp;
+    const hasAlerts = allAlerts.length > 0;
+    const hasPanels = hasAlerts || targetsDown > 0;
+
+    const criticalCount = allAlerts.filter(a => a.severity === 'critical').length;
+    const warningCount  = allAlerts.filter(a => a.severity === 'warning').length;
+
+    let html = '<div class="sre-detail">';
+    html += '<div class="sre-stats">';
+    html += `<div class="sre-stat${hasPanels ? ' clickable' : ''}" ${hasPanels ? `data-prom-panel="prom-panel-up" onclick="togglePrometheusPanel('prom-panel-up')"` : ''}>
+        <span class="sre-stat-val" style="color:var(--green)">${targetsUp}</span>
+        <span class="sre-stat-label">Targets up</span>
+    </div>`;
+    html += `<div class="sre-stat${targetsDown > 0 ? ' clickable' : ''}" ${targetsDown > 0 ? `data-prom-panel="prom-panel-down" onclick="togglePrometheusPanel('prom-panel-down')"` : ''}>
+        <span class="sre-stat-val" style="color:${targetsDown > 0 ? 'var(--red)' : 'var(--text-muted)'}">${targetsDown}</span>
+        <span class="sre-stat-label">Targets down</span>
+    </div>`;
+    html += `<div class="sre-stat${hasAlerts ? ' clickable' : ''}" ${hasAlerts ? `data-prom-panel="prom-panel-alerts" onclick="togglePrometheusPanel('prom-panel-alerts')"` : ''}>
+        <span class="sre-stat-val" style="color:${alertsFiring > 0 ? (criticalCount > 0 ? 'var(--red)' : 'var(--yellow)') : 'var(--text-muted)'}">${alertsFiring}</span>
+        <span class="sre-stat-label">Alertes firing</span>
+    </div>`;
+    html += `<div class="sre-stat">
+        <span class="sre-stat-val">${targetsTotal > 0 ? Math.round(targetsUp / targetsTotal * 100) : '—'}%</span>
+        <span class="sre-stat-label">Disponibilité</span>
+    </div>`;
+    html += '</div>';
+
+    // Panel : targets up
+    html += '<div class="sre-expand-panel" id="prom-panel-up">';
+    if (targetsUp === 0) {
+        html += '<div class="md-empty">Aucun target up</div>';
+    } else {
+        html += `<div class="sre-expand-row"><span class="sre-expand-dot green"></span><span class="sre-expand-name">${targetsUp} target${targetsUp > 1 ? 's' : ''} opérationnel${targetsUp > 1 ? 's' : ''}</span><span class="sre-expand-meta">${targetsTotal} au total</span></div>`;
+    }
+    html += '</div>';
+
+    // Panel : targets down
+    html += '<div class="sre-expand-panel" id="prom-panel-down">';
+    if (targetsDown === 0) {
+        html += '<div class="md-empty">Tous les targets sont up ✓</div>';
+    } else {
+        allTargetsDown.forEach(t => {
+            html += `<div class="sre-expand-row"><span class="sre-expand-dot red"></span><span class="sre-expand-name">${t.count} target${t.count > 1 ? 's' : ''} injoignable${t.count > 1 ? 's' : ''}</span>${eps.length > 1 ? `<span class="sre-expand-meta">${esc(t.endpoint)}</span>` : ''}</div>`;
+        });
+    }
+    html += '</div>';
+
+    // Panel : alertes
+    html += '<div class="sre-expand-panel" id="prom-panel-alerts">';
+    if (allAlerts.length === 0) {
+        html += '<div class="md-empty">Aucune alerte active ✓</div>';
+    } else {
+        const sorted = [...allAlerts].sort((a, b) => (a.severity === 'critical' ? -1 : 1));
+        sorted.forEach(a => {
+            const dot = a.severity === 'critical' ? 'red' : 'yellow';
+            const badge = a.severity === 'critical' ? '🔴' : '🟡';
+            html += `<div class="sre-expand-row">
+                <span class="sre-expand-dot ${dot}"></span>
+                <span class="sre-expand-name">${badge} ${esc(a.name)}</span>
+                <span class="sre-expand-meta" style="font-family:monospace;font-size:0.7rem">${esc(a.instance)}</span>
+                ${a.since ? `<span class="sre-expand-meta">${timeAgo(a.since)}</span>` : ''}
+            </div>`;
+        });
+    }
+    html += '</div>';
+
+    // Endpoint list
+    html += '<div class="obs-ep-list">';
+    eps.forEach(ep => {
+        const c = cache[ep.id];
+        const statusDot = !c ? 'grey' : c.ok !== false ? 'green' : 'red';
+        const sync = c?.testedAt ? `dernière vérif. ${timeAgo(new Date(c.testedAt).toISOString())}` : 'jamais testé';
+        html += `<div class="obs-ep-row"><span class="sre-expand-dot ${statusDot}"></span><span class="obs-ep-name">${esc(ep.name)}</span><span class="obs-ep-url">${esc(ep.url)}</span><span class="obs-ep-sync">${sync}</span></div>`;
+    });
+    html += '</div>';
+
+    html += '</div>';
+    content.innerHTML = html;
+}
+
+// ==================== LOKI DETAIL ====================
+function openLokiDetail() { renderLokiDetailContent(); openModal('modalLokiDetail'); }
+
+function toggleLokiPanel(panelId) {
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+    const wasOpen = panel.classList.contains('open');
+    document.querySelectorAll('#lokiDetailContent .sre-expand-panel').forEach(p => p.classList.remove('open'));
+    document.querySelectorAll('#lokiDetailContent .sre-stat.clickable').forEach(s => s.classList.remove('active'));
+    if (!wasOpen) {
+        panel.classList.add('open');
+        const stat = document.querySelector(`[data-loki-panel="${panelId}"]`);
+        if (stat) stat.classList.add('active');
+    }
+}
+
+function renderLokiDetailContent() {
+    const content = document.getElementById('lokiDetailContent');
+    if (!content) return;
+    const eps = state.lokiEndpoints || [];
+    const cache = state.lokiCache || {};
+    if (eps.length === 0) { content.innerHTML = '<div class="md-empty">Aucun endpoint Loki configuré — <a href="#" onclick="event.preventDefault();closeModal(\'modalLokiDetail\');openApiConfig()">configurer</a></div>'; return; }
+
+    let streamsActive = 0, errorCount = 0, warnCount = 0, allDown = false;
+    const allErrors = [], allWarnings = [];
+    let hasData = false;
+    eps.forEach(ep => {
+        const c = cache[ep.id];
+        if (!c) return;
+        hasData = true;
+        streamsActive += c.streamsActive ?? 0;
+        errorCount    += c.errorCount   ?? 0;
+        warnCount     += c.warnCount    ?? 0;
+        if (c.ok === false) allDown = true;
+        (c.recentErrors   || []).forEach(e => allErrors.push(e));
+        (c.recentWarnings || []).forEach(w => allWarnings.push(w));
+    });
+    allErrors.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    allWarnings.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+
+    const totalLogs = errorCount + warnCount;
+    const errorPct  = totalLogs > 0 ? Math.round(errorCount / totalLogs * 100) : 0;
+    const fmt       = n => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n);
+    const hasErrPanel  = allErrors.length > 0;
+    const hasWarnPanel = allWarnings.length > 0;
+
+    let html = '<div class="sre-detail">';
+    html += '<div class="sre-stats">';
+    html += `<div class="sre-stat">
+        <span class="sre-stat-val" style="color:${allDown ? 'var(--red)' : 'var(--green)'}">${streamsActive}</span>
+        <span class="sre-stat-label">Streams actifs</span>
+    </div>`;
+    html += `<div class="sre-stat${hasErrPanel ? ' clickable' : ''}" ${hasErrPanel ? `data-loki-panel="loki-panel-errors" onclick="toggleLokiPanel('loki-panel-errors')"` : ''}>
+        <span class="sre-stat-val" style="color:${errorCount > 1000 ? 'var(--red)' : errorCount > 100 ? 'var(--yellow)' : 'var(--text)'}">${fmt(errorCount)}</span>
+        <span class="sre-stat-label">Erreurs (1h)${hasErrPanel ? ' ▾' : ''}</span>
+    </div>`;
+    html += `<div class="sre-stat${hasWarnPanel ? ' clickable' : ''}" ${hasWarnPanel ? `data-loki-panel="loki-panel-warnings" onclick="toggleLokiPanel('loki-panel-warnings')"` : ''}>
+        <span class="sre-stat-val" style="color:${warnCount > 500 ? 'var(--yellow)' : 'var(--text)'}">${fmt(warnCount)}</span>
+        <span class="sre-stat-label">Warnings (1h)${hasWarnPanel ? ' ▾' : ''}</span>
+    </div>`;
+    html += `<div class="sre-stat">
+        <span class="sre-stat-val" style="color:${errorPct > 20 ? 'var(--red)' : errorPct > 5 ? 'var(--yellow)' : 'var(--green)'}">${errorPct}%</span>
+        <span class="sre-stat-label">Taux d'erreur</span>
+    </div>`;
+    html += '</div>';
+
+    // Panel erreurs
+    html += '<div class="sre-expand-panel" id="loki-panel-errors">';
+    if (allErrors.length === 0) {
+        html += '<div class="md-empty">Aucune erreur récente ✓</div>';
+    } else {
+        allErrors.forEach(e => {
+            html += `<div class="obs-log-entry">
+                <span class="sre-expand-dot red"></span>
+                <div class="obs-log-entry-body">
+                    <div class="obs-log-entry-header">
+                        <span class="obs-log-service">${esc(e.service)}</span>
+                        <span class="obs-log-entry-time">${timeAgo(e.ts)}</span>
+                    </div>
+                    <div class="obs-log-entry-msg">${esc(e.msg)}</div>
+                </div>
+            </div>`;
+        });
+    }
+    html += '</div>';
+
+    // Panel warnings
+    html += '<div class="sre-expand-panel" id="loki-panel-warnings">';
+    if (allWarnings.length === 0) {
+        html += '<div class="md-empty">Aucun warning récent ✓</div>';
+    } else {
+        allWarnings.forEach(w => {
+            html += `<div class="obs-log-entry">
+                <span class="sre-expand-dot yellow"></span>
+                <div class="obs-log-entry-body">
+                    <div class="obs-log-entry-header">
+                        <span class="obs-log-service">${esc(w.service)}</span>
+                        <span class="obs-log-entry-time">${timeAgo(w.ts)}</span>
+                    </div>
+                    <div class="obs-log-entry-msg">${esc(w.msg)}</div>
+                </div>
+            </div>`;
+        });
+    }
+    html += '</div>';
+
+    // Barre de répartition
+    if (hasData && totalLogs > 0) {
+        const warnPct = Math.round(warnCount / totalLogs * 100);
+        html += `<div class="obs-log-bar-wrap">
+            <div class="obs-log-bar-label">Répartition des logs (1h)</div>
+            <div class="obs-log-bar">
+                <div class="obs-log-bar-seg seg-error" style="width:${errorPct}%" title="${fmt(errorCount)} erreurs"></div>
+                <div class="obs-log-bar-seg seg-warn"  style="width:${warnPct}%"  title="${fmt(warnCount)} warnings"></div>
+                <div class="obs-log-bar-seg seg-ok"    style="width:${100 - errorPct - warnPct}%" title="autres"></div>
+            </div>
+            <div class="obs-log-bar-legend">
+                <span><span class="obs-log-dot error"></span>error ${errorPct}%</span>
+                <span><span class="obs-log-dot warn"></span>warn ${warnPct}%</span>
+                <span><span class="obs-log-dot ok"></span>autres ${100 - errorPct - warnPct}%</span>
+            </div>
+        </div>`;
+    }
+
+    // Endpoint list
+    html += '<div class="obs-ep-list">';
+    eps.forEach(ep => {
+        const c = cache[ep.id];
+        const statusDot = !c ? 'grey' : c.ok !== false ? 'green' : 'red';
+        const sync = c?.testedAt ? `dernière vérif. ${timeAgo(new Date(c.testedAt).toISOString())}` : 'jamais testé';
+        html += `<div class="obs-ep-row"><span class="sre-expand-dot ${statusDot}"></span><span class="obs-ep-name">${esc(ep.name)}</span><span class="obs-ep-url">${esc(ep.url)}</span><span class="obs-ep-sync">${sync}</span></div>`;
+    });
+    html += '</div>';
+
+    html += '</div>';
+    content.innerHTML = html;
+}
+
+// ==================== TEMPO DETAIL ====================
+function openTempoDetail() { renderTempoDetailContent(); openModal('modalTempoDetail'); }
+
+function toggleTempoPanel(panelId) {
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+    const wasOpen = panel.classList.contains('open');
+    document.querySelectorAll('#tempoDetailContent .sre-expand-panel').forEach(p => p.classList.remove('open'));
+    document.querySelectorAll('#tempoDetailContent .sre-stat.clickable').forEach(s => s.classList.remove('active'));
+    if (!wasOpen) {
+        panel.classList.add('open');
+        const stat = document.querySelector(`[data-tempo-panel="${panelId}"]`);
+        if (stat) stat.classList.add('active');
+    }
+}
+
+function renderTempoDetailContent() {
+    const content = document.getElementById('tempoDetailContent');
+    if (!content) return;
+    const eps = state.tempoEndpoints || [];
+    const cache = state.tempoCache || {};
+    if (eps.length === 0) { content.innerHTML = '<div class="md-empty">Aucun endpoint Tempo configuré — <a href="#" onclick="event.preventDefault();closeModal(\'modalTempoDetail\');openApiConfig()">configurer</a></div>'; return; }
+
+    let tracesTotal = 0, tracesError = 0, p95Sum = 0, p95Count = 0, hasDown = false;
+    const allTraceErrors = [];
+    let hasData = false;
+    eps.forEach(ep => {
+        const c = cache[ep.id];
+        if (!c) return;
+        hasData = true;
+        tracesTotal += c.tracesTotal ?? 0;
+        tracesError += c.tracesError ?? 0;
+        if (c.p95LatencyMs != null) { p95Sum += c.p95LatencyMs; p95Count++; }
+        if (c.ok === false) hasDown = true;
+        (c.recentErrors || []).forEach(t => allTraceErrors.push(t));
+    });
+    allTraceErrors.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+
+    const errorRate     = tracesTotal > 0 ? (tracesError / tracesTotal * 100) : 0;
+    const p95           = p95Count > 0 ? Math.round(p95Sum / p95Count) : null;
+    const p95Label      = p95 == null ? '—' : p95 >= 1000 ? (p95 / 1000).toFixed(2) + 's' : p95 + 'ms';
+    const isCritical    = errorRate > 15 || (p95 != null && p95 > 800);
+    const hasErrPanel   = allTraceErrors.length > 0;
+    const fmtDur        = ms => ms >= 1000 ? (ms / 1000).toFixed(2) + 's' : ms + 'ms';
+
+    let html = '<div class="sre-detail">';
+    html += '<div class="sre-stats">';
+    html += `<div class="sre-stat">
+        <span class="sre-stat-val">${tracesTotal.toLocaleString('fr-FR')}</span>
+        <span class="sre-stat-label">Traces (1h)</span>
+    </div>`;
+    html += `<div class="sre-stat${hasErrPanel ? ' clickable' : ''}" ${hasErrPanel ? `data-tempo-panel="tempo-panel-errors" onclick="toggleTempoPanel('tempo-panel-errors')"` : ''}>
+        <span class="sre-stat-val" style="color:${tracesError > 0 ? 'var(--red)' : 'var(--text-muted)'}">${tracesError.toLocaleString('fr-FR')}</span>
+        <span class="sre-stat-label">En erreur${hasErrPanel ? ' ▾' : ''}</span>
+    </div>`;
+    html += `<div class="sre-stat">
+        <span class="sre-stat-val" style="color:${errorRate > 15 ? 'var(--red)' : errorRate > 5 ? 'var(--yellow)' : 'var(--green)'}">${errorRate.toFixed(1)}%</span>
+        <span class="sre-stat-label">Taux d'erreur</span>
+    </div>`;
+    html += `<div class="sre-stat">
+        <span class="sre-stat-val" style="color:${p95 != null && p95 > 800 ? 'var(--red)' : p95 != null && p95 > 400 ? 'var(--yellow)' : 'var(--green)'}">${p95Label}</span>
+        <span class="sre-stat-label">Latence P95</span>
+    </div>`;
+    html += '</div>';
+
+    // Panel traces en erreur
+    html += '<div class="sre-expand-panel" id="tempo-panel-errors">';
+    if (allTraceErrors.length === 0) {
+        html += '<div class="md-empty">Aucune trace en erreur ✓</div>';
+    } else {
+        allTraceErrors.forEach(t => {
+            const dur = fmtDur(t.durationMs ?? 0);
+            html += `<div class="obs-log-entry">
+                <span class="sre-expand-dot red"></span>
+                <div class="obs-log-entry-body">
+                    <div class="obs-log-entry-header">
+                        <span class="obs-log-service">${esc(t.service)}</span>
+                        <span class="obs-log-op">${esc(t.operation)}</span>
+                        <span class="obs-log-duration">${dur}</span>
+                        <span class="obs-log-entry-time">${timeAgo(t.ts)}</span>
+                    </div>
+                    <div class="obs-log-entry-msg">${esc(t.error)}</div>
+                </div>
+            </div>`;
+        });
+    }
+    html += '</div>';
+
+    // Barre de santé
+    if (hasData && tracesTotal > 0) {
+        const okPct  = Math.round((tracesTotal - tracesError) / tracesTotal * 100);
+        const errPct = 100 - okPct;
+        html += `<div class="obs-log-bar-wrap">
+            <div class="obs-log-bar-label">Répartition des traces</div>
+            <div class="obs-log-bar">
+                <div class="obs-log-bar-seg seg-ok"    style="width:${okPct}%"  title="${(tracesTotal - tracesError).toLocaleString('fr-FR')} ok"></div>
+                <div class="obs-log-bar-seg seg-error" style="width:${errPct}%" title="${tracesError.toLocaleString('fr-FR')} erreur"></div>
+            </div>
+            <div class="obs-log-bar-legend">
+                <span><span class="obs-log-dot ok"></span>ok ${okPct}%</span>
+                <span><span class="obs-log-dot error"></span>erreur ${errPct}%</span>
+            </div>
+        </div>`;
+    }
+
+    // Statut global
+    if (hasData) {
+        const statusIcon  = isCritical ? '🔴' : hasDown ? '🟡' : '🟢';
+        const statusLabel = isCritical ? 'Dégradé — intervention recommandée' : hasDown ? 'Partiellement dégradé' : 'Opérationnel';
+        html += `<div class="obs-status-row">${statusIcon} <strong>${statusLabel}</strong></div>`;
+    }
+
+    // Endpoint list
+    html += '<div class="obs-ep-list">';
+    eps.forEach(ep => {
+        const c = cache[ep.id];
+        const statusDot = !c ? 'grey' : c.ok !== false ? 'green' : 'red';
+        const sync = c?.testedAt ? `dernière vérif. ${timeAgo(new Date(c.testedAt).toISOString())}` : 'jamais testé';
+        html += `<div class="obs-ep-row"><span class="sre-expand-dot ${statusDot}"></span><span class="obs-ep-name">${esc(ep.name)}</span><span class="obs-ep-url">${esc(ep.url)}</span><span class="obs-ep-sync">${sync}</span></div>`;
+    });
+    html += '</div>';
+
+    html += '</div>';
+    content.innerHTML = html;
+}
+
 function toggleConsulPanel(panelId) {
     const panel = document.getElementById(panelId);
     if (!panel) return;
@@ -842,7 +1309,7 @@ function renderApiEndpointList() {
         const sync = ep.fetchedAt ? `<span class="api-ep-sync" title="${new Date(ep.fetchedAt).toLocaleString('fr-FR')}">⟳ ${timeAgoShort(ep.fetchedAt)}</span>` : '';
         const infoClass = ep.info === 'erreur' || (ep.testResult && !ep.testResult.ok) ? ' style="color:var(--red)"' : (ep.testResult?.ok ? ' style="color:var(--green)"' : '');
         return `<div class="api-ep-item">
-            <span class="api-ep-type" style="background:${t.color}">${t.icon}</span>
+            <span class="api-ep-type" style="background:${t.color}">${t.icon}<span class="api-ep-type-label">${t.label}</span></span>
             <div class="api-ep-info">
                 <span class="api-ep-name">${esc(ep.name)}</span>
                 <span class="api-ep-url">${esc(ep.url)}${ep.detail ? ' · ' + esc(ep.detail) : ''}</span>

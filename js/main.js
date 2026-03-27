@@ -29,6 +29,15 @@
         // Components (suite — dépendent d'intégrations ou sont transversaux)
         'js/components/export.js',
         'js/components/filters-views.js',
+
+        // Données simulées des scénarios (chargées avant demo.js)
+        'js/scenarios/nominal/prometheus.js',
+        'js/scenarios/nominal/loki.js',
+        'js/scenarios/nominal/tempo.js',
+        'js/scenarios/incident/prometheus.js',
+        'js/scenarios/incident/loki.js',
+        'js/scenarios/incident/tempo.js',
+
         'js/components/demo.js',
 
         // Init (toujours en dernier)

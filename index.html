@@ -48,6 +48,7 @@
                     <div class="demo-dropdown" id="demoDropdown">
                         <button onclick="loadDemoIncident()">🔴 Scénario incident</button>
                         <button onclick="loadDemoGreen()">🟢 Scénario nominal</button>
+                        <button onclick="loadDemoObservability()">🔭 Stack observabilité</button>
                         <button onclick="resetBoard()">🗑️ Remettre à zéro</button>
                     </div>
                 </div>
@@ -324,6 +325,33 @@
                     <div class="metric-value" id="metricOpenstack">—</div>
                     <div class="metric-label">OpenStack</div>
                     <div class="metric-mini-summary" id="metricOpenstackSummary"></div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-prometheus metric-clickable" onclick="openPrometheusDetail()" title="Targets Prometheus actives et alertes" data-settings-id="metric-prometheus">
+                <div class="metric-icon">📊</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricPrometheus">—</div>
+                    <div class="metric-label">Prometheus</div>
+                    <div class="metric-mini-summary" id="metricPrometheusSummary"></div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-loki metric-clickable" onclick="openLokiDetail()" title="Erreurs et streams Loki (dernière heure)" data-settings-id="metric-loki">
+                <div class="metric-icon">📋</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricLoki">—</div>
+                    <div class="metric-label">Loki</div>
+                    <div class="metric-mini-summary" id="metricLokiSummary"></div>
+                </div>
+                <div class="metric-glow"></div>
+            </div>
+            <div class="metric-card metric-card-tempo metric-clickable" onclick="openTempoDetail()" title="Traces Tempo — taux d'erreur et latence P95" data-settings-id="metric-tempo">
+                <div class="metric-icon">🔍</div>
+                <div class="metric-content">
+                    <div class="metric-value" id="metricTempo">—</div>
+                    <div class="metric-label">Tempo</div>
+                    <div class="metric-mini-summary" id="metricTempoSummary"></div>
                 </div>
                 <div class="metric-glow"></div>
             </div>
@@ -1194,6 +1222,57 @@ JSON: tableau [{name, type, status, ip}]'></textarea>
             <button class="btn btn-secondary" onclick="closeModal('modalOpenstackDetail')">Fermer</button>
             <button class="btn btn-small btn-secondary" onclick="closeModal('modalOpenstackDetail');openApiConfig()">⚙️ Configurer</button>
             <button class="btn btn-primary" onclick="fetchAllOpenstack()">🔄 Rafraîchir</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Prometheus Detail -->
+<div class="modal-overlay" id="modalPrometheusDetail">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>📊 Prometheus — Targets & Alertes</h3>
+            <button class="btn-close" onclick="closeModal('modalPrometheusDetail')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="prometheusDetailContent" class="metric-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalPrometheusDetail')">Fermer</button>
+            <button class="btn btn-small btn-secondary" onclick="closeModal('modalPrometheusDetail');openApiConfig()">⚙️ Configurer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Loki Detail -->
+<div class="modal-overlay" id="modalLokiDetail">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>📋 Loki — Logs & Streams</h3>
+            <button class="btn-close" onclick="closeModal('modalLokiDetail')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="lokiDetailContent" class="metric-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalLokiDetail')">Fermer</button>
+            <button class="btn btn-small btn-secondary" onclick="closeModal('modalLokiDetail');openApiConfig()">⚙️ Configurer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Tempo Detail -->
+<div class="modal-overlay" id="modalTempoDetail">
+    <div class="modal modal-large">
+        <div class="modal-header">
+            <h3>🔍 Tempo — Traces distribuées</h3>
+            <button class="btn-close" onclick="closeModal('modalTempoDetail')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="tempoDetailContent" class="metric-detail-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalTempoDetail')">Fermer</button>
+            <button class="btn btn-small btn-secondary" onclick="closeModal('modalTempoDetail');openApiConfig()">⚙️ Configurer</button>
         </div>
     </div>
 </div>

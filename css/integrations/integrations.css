@@ -93,6 +93,70 @@
     animation: pulse-warning 1.5s ease-in-out infinite;
 }
 
+/* ========== METRIC CARD: PROMETHEUS ========== */
+.metric-card-prometheus {
+    border-color: rgba(230, 82, 44, 0.3);
+}
+.metric-card-prometheus .metric-value {
+    background: linear-gradient(135deg, #f97316, #e6522c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.metric-card-prometheus .metric-glow { background: #e6522c; }
+.metric-card-prometheus:hover {
+    border-color: rgba(230, 82, 44, 0.6);
+    box-shadow: 0 12px 32px rgba(230, 82, 44, 0.2);
+}
+.metric-card-prometheus.has-critical {
+    border-color: rgba(220, 38, 38, 0.7);
+    animation: pulse-warning 1.5s ease-in-out infinite;
+}
+.metric-card-prometheus.has-alert {
+    border-color: rgba(245, 158, 11, 0.7);
+    animation: pulse-warning 2.5s ease-in-out infinite;
+}
+
+/* ========== METRIC CARD: LOKI ========== */
+.metric-card-loki {
+    border-color: rgba(44, 153, 214, 0.3);
+}
+.metric-card-loki .metric-value {
+    background: linear-gradient(135deg, #38bdf8, #2c99d6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.metric-card-loki .metric-glow { background: #2c99d6; }
+.metric-card-loki:hover {
+    border-color: rgba(44, 153, 214, 0.6);
+    box-shadow: 0 12px 32px rgba(44, 153, 214, 0.2);
+}
+.metric-card-loki.has-critical {
+    border-color: rgba(220, 38, 38, 0.7);
+    animation: pulse-warning 1.5s ease-in-out infinite;
+}
+
+/* ========== METRIC CARD: TEMPO ========== */
+.metric-card-tempo {
+    border-color: rgba(245, 83, 83, 0.3);
+}
+.metric-card-tempo .metric-value {
+    background: linear-gradient(135deg, #fb7185, #f55353);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.metric-card-tempo .metric-glow { background: #f55353; }
+.metric-card-tempo:hover {
+    border-color: rgba(245, 83, 83, 0.6);
+    box-shadow: 0 12px 32px rgba(245, 83, 83, 0.2);
+}
+.metric-card-tempo.has-critical {
+    border-color: rgba(220, 38, 38, 0.7);
+    animation: pulse-warning 1.5s ease-in-out infinite;
+}
+
 /* ========== RATE LIMIT FORM ========== */
 .rl-add-form {
     background: var(--bg-card);
@@ -464,12 +528,26 @@
     border-radius: var(--radius-sm);
 }
 .api-ep-type {
-    width: 26px; height: 26px;
-    display: flex; align-items: center; justify-content: center;
+    width: 42px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 1px;
+    padding: 3px 2px;
     border-radius: 6px;
     font-size: 0.85rem;
     color: #fff;
     flex-shrink: 0;
+}
+.api-ep-type-label {
+    font-size: 0.52rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    opacity: 0.92;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 40px;
 }
 .api-ep-info {
     flex: 1;
@@ -949,4 +1027,140 @@
     font-style: italic;
     border-top: 1px dashed var(--border-light);
     text-align: center;
+}
+
+/* ========== OBSERVABILITÉ — MODALS PARTAGÉES (Prometheus, Loki, Tempo) ========== */
+.obs-ep-list {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+}
+.obs-ep-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+}
+.obs-ep-name {
+    font-weight: 600;
+    min-width: 100px;
+}
+.obs-ep-url {
+    color: var(--text-muted);
+    font-family: monospace;
+    font-size: 0.72rem;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.obs-ep-sync {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    white-space: nowrap;
+}
+.obs-status-row {
+    margin-top: 14px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    font-size: 0.82rem;
+}
+.obs-log-bar-wrap {
+    margin-top: 14px;
+}
+.obs-log-bar-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+.obs-log-bar {
+    display: flex;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    background: var(--bg-input);
+}
+.obs-log-bar-seg {
+    transition: width 0.3s ease;
+}
+.obs-log-bar-seg.seg-error { background: var(--red); }
+.obs-log-bar-seg.seg-warn  { background: var(--yellow); }
+.obs-log-bar-seg.seg-ok    { background: var(--green); }
+.obs-log-bar-legend {
+    display: flex;
+    gap: 14px;
+    margin-top: 6px;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+.obs-log-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 3px;
+    vertical-align: middle;
+}
+.obs-log-dot.error { background: var(--red); }
+.obs-log-dot.warn  { background: var(--yellow); }
+.obs-log-dot.ok    { background: var(--green); }
+
+/* ========== ENTRÉES LOG / TRACE dans les panneaux expandables ========== */
+.obs-log-entry {
+    display: flex;
+    gap: 8px;
+    padding: 7px 4px;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+}
+.obs-log-entry:last-child { border-bottom: none; }
+.obs-log-entry-body {
+    flex: 1;
+    min-width: 0;
+}
+.obs-log-entry-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 3px;
+    flex-wrap: wrap;
+}
+.obs-log-service {
+    font-weight: 700;
+    font-size: 0.72rem;
+    color: var(--accent);
+    white-space: nowrap;
+}
+.obs-log-op {
+    font-size: 0.68rem;
+    font-family: monospace;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+.obs-log-duration {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--red);
+    margin-left: auto;
+    white-space: nowrap;
+}
+.obs-log-entry-time {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.obs-log-entry-msg {
+    font-size: 0.72rem;
+    color: var(--text);
+    font-family: monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.85;
 }
