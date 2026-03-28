@@ -47,7 +47,7 @@ function addLog(icon, msg) {
 function renderLog() {
     const container = document.getElementById('logEntries');
     if (state.log.length === 0) {
-        container.innerHTML = '<div class="empty-state" style="padding:20px;font-size:0.8rem">Aucun événement</div>';
+        container.innerHTML = '<div class="empty-state"><span class="empty-state-icon">📝</span>Aucun evenement<span class="empty-state-hint">Les actions seront journalisees ici</span></div>';
         return;
     }
     container.innerHTML = state.log.slice(0, 50).map(l => `
@@ -167,7 +167,7 @@ function applyChartsLayout() {
     const btn = document.getElementById('chartsLayoutToggle');
     if (!grid) return;
     grid.classList.toggle('cols-3', chartsLayoutCols === 3);
-    if (btn) btn.textContent = chartsLayoutCols === 2 ? '▦ 3 col' : '▥ 2 col';
+    if (btn) btn.textContent = chartsLayoutCols === 2 ? 'Disposition : ▦ 3 colonnes' : 'Disposition : ▥ 2 colonnes';
 }
 
 function toggleChartsLayout() {

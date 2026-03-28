@@ -72,6 +72,7 @@ Organisation en 3 couches :
 | `components/rate-limit.js` | Rate limiting — saisie manuelle d'événements, analyse d'attaque, alertes, chart | `computeRateLimitStats()`, `detectAttackPattern()`, `renderRateLimitMetric()`, `addRateLimitEvent()`, `openRateLimitDetail()`, `updateRateLimitChart()` |
 | `components/export.js` | Export/rédiger + channels + mdToHtml | `generateMarkdown()`, `generateSlack()`, `generateMattermost()`, `mdToHtml()`, `renderChannels()` |
 | `components/filters-views.js` | Filtres, vues, import sources, dashboard settings, sidebar channels | `getActiveFilters()`, `applyAdvancedFilters()`, `switchView()`, `openDashboardSettings()`, `initDsHideButtons()`, `dsSaveChannels()` |
+| `components/navigation.js` | Quick-nav flottant + scroll-to-top | `initQuickNav()` |
 | `components/demo.js` | Données de démo | `loadDemoIncident()`, `loadDemoGreen()`, `resetBoard()` |
 | **`integrations/`** | | |
 | `integrations/gitlab.js` | Intégration GitLab (MR + Pipelines + Commits) | `fetchGitlabMRs()`, `renderGitlabMetric()`, `openGitlabDetail()`, `fetchGitlabPipelines()`, `renderGitlabPipelinesMetric()`, `fetchGitlabCommits()`, `renderGitlabCommitsMetric()` |
@@ -131,6 +132,16 @@ Les éléments HTML portent `data-views="ops reseau apps"`. `switchView(view)` t
 
 ### Visibilité des éléments (dashboard settings)
 Les éléments portent `data-settings-id="xxx"`. `applyDashboardSettings()` ajoute/retire `.ds-hidden` (`display: none !important`). L'override `!important` est nécessaire car `switchView` utilise des styles inline.
+
+### Quick-nav & scroll-to-top (`components/navigation.js`)
+- Nav flottant à gauche avec dots par section (`#quickNav`), apparaît après 200px de scroll
+- IntersectionObserver pour highlight la section visible (rootMargin `-30% 0px -60% 0px`)
+- Masque les dots des sections non visibles (via `data-views` ou `.ds-hidden`)
+- Scroll-to-top (`#scrollTopBtn`), visible après 400px
+- Les sections ont des IDs : `sectionMetrics`, `chartsGrid`, `sectionInfra`, `sectionKanban`, `sectionHistory`, `sectionLog`
+
+### Section dividers
+Balises `<div class="section-divider">` entre les sections principales, avec un label central (`<span class="section-divider-label">`). Portent `data-views` pour suivre la visibilité des vues.
 
 ### Toasts
 ```js

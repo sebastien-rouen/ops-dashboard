@@ -27,7 +27,7 @@ function switchView(view, btn) {
     // Recalculate view-tabs position (header impacts may show/hide)
     requestAnimationFrame(updateViewTabsPosition);
 
-    // Resize charts after view change
+    // Resize charts after view change + update dividers
     setTimeout(() => {
         if (activityChart) activityChart.resize();
         if (infraStatusChartInstance) infraStatusChartInstance.resize();
@@ -35,6 +35,7 @@ function switchView(view, btn) {
         if (impactsTimelineChartInstance) impactsTimelineChartInstance.resize();
         if (window.trafficLightChartInstance) window.trafficLightChartInstance.resize();
         if (pricingChartInstance) pricingChartInstance.resize();
+        updateSectionDividers();
     }, 50);
 }
 
@@ -67,6 +68,7 @@ function applyAdvancedFilters() {
     updateImpactsTimelineChart();
     updatePricingChart();
     updateFilterResults();
+    updateSectionDividers();
 }
 
 function clearGlobalSearch() {
@@ -152,6 +154,65 @@ function filterImpactItems(filters) {
 }
 
 // ==================== IMPORT FROM SOURCES ====================
+const IMPORT_EXAMPLES = {
+    prometheus: {
+        url: 'http://prometheus:9090/api/v1/targets',
+        hint: 'Endpoint : <code>/api/v1/targets</code> ou <code>/api/v1/query?query=up</code>',
+        json: {
+            "data": {
+                "activeTargets": [
+                    { "labels": { "instance": "10.0.1.10:9100", "job": "node-exporter" }, "health": "up" },
+                    { "labels": { "instance": "10.0.1.11:9100", "job": "node-exporter" }, "health": "up" },
+                    { "labels": { "instance": "10.0.2.10:5432", "job": "postgres" }, "health": "down" }
+                ]
+            }
+        }
+    },
+    zabbix: {
+        url: 'http://zabbix/api_jsonrpc.php',
+        hint: 'Methode : <code>host.get</code> avec <code>selectInterfaces</code>',
+        json: {
+            "result": [
+                { "host": "web-server-01", "name": "Web Server 01", "available": "1", "interfaces": [{ "ip": "10.0.1.10" }], "description": "nginx reverse proxy" },
+                { "host": "db-master", "name": "DB Master", "available": "1", "interfaces": [{ "ip": "10.0.2.10" }], "description": "PostgreSQL 15" },
+                { "host": "cache-01", "name": "Cache Redis", "available": "2", "interfaces": [{ "ip": "10.0.2.20" }], "description": "Redis 7.2" }
+            ]
+        }
+    },
+    json: {
+        url: '',
+        hint: 'Tableau JSON avec les champs <code>name</code>, <code>type</code>, <code>status</code>, <code>ip</code>',
+        json: [
+            { "name": "prod-web-01", "type": "vm", "status": "up", "ip": "10.0.1.10", "details": "nginx 1.24, node 18" },
+            { "name": "prod-db-master", "type": "lxc", "status": "up", "ip": "10.0.2.10", "details": "PostgreSQL 15" },
+            { "name": "prod-cache-01", "type": "lxc", "status": "degraded", "ip": "10.0.2.20", "details": "Redis 7.2 — lag" }
+        ]
+    }
+};
+
+function onImportFormatChange() {
+    const format = document.getElementById('importSourceFormat').value;
+    const container = document.getElementById('importFormatExample');
+    const ex = IMPORT_EXAMPLES[format];
+    if (!ex) { container.innerHTML = ''; return; }
+
+    const jsonStr = JSON.stringify(ex.json, null, 2);
+    container.innerHTML = `
+        <div class="import-example-hint">${ex.hint}</div>
+        <pre class="import-example-json"><code>${esc(jsonStr)}</code></pre>
+        <button class="btn btn-small btn-secondary" onclick="loadImportExample()">Charger cet exemple</button>
+    `;
+}
+
+function loadImportExample() {
+    const format = document.getElementById('importSourceFormat').value;
+    const ex = IMPORT_EXAMPLES[format];
+    if (!ex) return;
+    document.getElementById('importSourceJson').value = JSON.stringify(ex.json, null, 2);
+    if (ex.url) document.getElementById('importSourceUrl').value = ex.url;
+    toast('Exemple chargé — cliquez Prévisualiser');
+}
+
 function openImportSourcesModal() {
     document.getElementById('importSourceUrl').value = '';
     document.getElementById('importSourceFormat').value = 'prometheus';
@@ -159,6 +220,7 @@ function openImportSourcesModal() {
     document.getElementById('importSourcePreview').innerHTML = '';
     document.getElementById('importSourcePreview').style.display = 'none';
     document.getElementById('btnConfirmSourceImport').disabled = true;
+    onImportFormatChange();
     openModal('modalImportSources');
 }
 
@@ -459,6 +521,7 @@ function applyDashboardSettings() {
     setTimeout(() => {
         [activityChart, infraStatusChartInstance, priorityChartInstance, impactsTimelineChartInstance, pricingChartInstance].forEach(c => { if (c) c.resize(); });
         if (window.trafficLightChartInstance) window.trafficLightChartInstance.resize();
+        updateSectionDividers();
     }, 50);
 }
 

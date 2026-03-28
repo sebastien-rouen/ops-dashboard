@@ -331,3 +331,38 @@
     font-size: 0.75rem;
     margin-top: 2px;
 }
+
+/* ========== IMPORT FORMAT EXAMPLE ========== */
+.import-format-example {
+    margin: 8px 0 4px;
+    padding: 12px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+.import-example-hint {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+.import-example-hint code {
+    background: rgba(99,102,241,0.1);
+    color: var(--accent);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.74rem;
+}
+.import-example-json {
+    margin: 0 0 10px;
+    padding: 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow-x: auto;
+    max-height: 160px;
+    font-size: 0.7rem;
+    line-height: 1.4;
+}
+.import-example-json code {
+    color: var(--text-secondary);
+}

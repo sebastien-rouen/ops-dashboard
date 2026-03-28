@@ -1,12 +1,12 @@
 /* ========== RESPONSIVE ========== */
 @media (max-width: 1400px) {
-    .metrics-group { grid-template-columns: repeat(3, 1fr); }
+    .metrics-group-cards { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 1024px) {
     .charts-grid, .charts-grid.cols-3 { grid-template-columns: 1fr; }
     .kanban-board { grid-template-columns: 1fr; }
-    .metrics-group { grid-template-columns: repeat(2, 1fr); }
+    .metrics-group-cards { grid-template-columns: repeat(2, 1fr); }
 
     .metric-card {
         padding: 16px;
@@ -25,7 +25,7 @@
     .header-top { padding: 12px 16px; flex-direction: column; gap: 10px; }
     .header-impacts { padding: 6px 16px; }
     main { padding: 16px; }
-    .metrics-group { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .metrics-group-cards { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .impacts-grid { grid-template-columns: 1fr; }
     .infra-row-name { min-width: 100px; font-size: 0.78rem; }
     .infra-row-ip { display: none; }

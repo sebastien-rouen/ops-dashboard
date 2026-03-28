@@ -14,20 +14,22 @@
     justify-self: end;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 4px 10px;
-    font-size: 0.72rem;
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 0.7rem;
     font-weight: 600;
     color: var(--text-muted);
     cursor: pointer;
     transition: all 0.2s;
     font-family: inherit;
     margin-bottom: -8px;
+    letter-spacing: 0.02em;
 }
 
 .charts-layout-toggle:hover {
     background: var(--bg-input);
-    color: var(--text);
+    color: var(--text-primary);
+    border-color: var(--accent);
 }
 
 .chart-container {
@@ -41,13 +43,35 @@
 
 .chart-container h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 16px; }
 
+/* Container compact quand le chart-wrap est cache (empty state) */
+.chart-container:has(.chart-empty-msg) {
+    border-style: dashed;
+    opacity: 0.6;
+}
+
+.chart-container:has(.chart-empty-msg) h3 {
+    font-size: 0.82rem;
+    margin-bottom: 8px;
+    opacity: 0.7;
+}
+
 .chart-empty-msg {
     text-align: center;
     color: var(--text-muted);
-    font-size: 0.82rem;
-    padding: 40px 20px;
+    font-size: 0.75rem;
+    padding: 20px 16px;
     line-height: 1.5;
-    opacity: 0.7;
+    opacity: 0.5;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    margin-top: -8px;
+    background: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 8px,
+        rgba(255,255,255,0.008) 8px,
+        rgba(255,255,255,0.008) 16px
+    );
 }
 
 .chart-wrap { position: relative; height: 220px; width: 100%; }

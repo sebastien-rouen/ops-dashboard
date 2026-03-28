@@ -12,9 +12,9 @@ function initDragDrop() {
 
 // ---- Métriques ----
 function initMetricSortables() {
-    document.querySelectorAll('.metrics-group').forEach(group => {
-        if (group._sortable) group._sortable.destroy();
-        group._sortable = new Sortable(group, {
+    document.querySelectorAll('.metrics-group-cards').forEach(container => {
+        if (container._sortable) container._sortable.destroy();
+        container._sortable = new Sortable(container, {
             animation: 150,
             handle: '.drag-handle',
             ghostClass: 'sortable-ghost',
@@ -48,9 +48,10 @@ function applyMetricsOrder() {
         const key = label.textContent.trim().toLowerCase().replace(/\s+/g, '-').replace(/\//g, '');
         const ids = order[key];
         if (!ids || ids.length === 0) return;
+        const cardsContainer = group.querySelector('.metrics-group-cards') || group;
         ids.forEach(id => {
             const card = group.querySelector(`.metric-card[data-settings-id="${id}"]`);
-            if (card) group.appendChild(card);
+            if (card) cardsContainer.appendChild(card);
         });
     });
 }

@@ -5,6 +5,7 @@ function dismissBanner() {
     document.getElementById('privacyBanner').classList.add('hidden');
     state.bannerDismissed = true;
     saveState();
+    requestAnimationFrame(updateViewTabsPosition);
 }
 
 // ==================== GLOBAL STATUS ====================
@@ -49,7 +50,7 @@ function renderEnvIndicators() {
             statusText = `${up}/${total} up`;
         }
 
-        return `<div class="env-pill env-${color}" title="${envLabels[env]} : ${statusText}">
+        return `<div class="env-pill env-${color}" title="${envLabels[env]} : ${statusText}" onclick="openEnvDetail('${env}')" style="cursor:pointer">
             <span class="env-pill-dot ${color}"></span>
             <span class="env-pill-label">${envLabels[env]}</span>
             <span class="env-pill-count">${up}/${total}</span>
@@ -163,4 +164,85 @@ function scrollToAlertTarget(target, ids) {
     } else if (target === 'impacts') {
         openMetricDetail('impacts');
     }
+}
+
+// ==================== ENV DETAIL MODAL ====================
+function openEnvDetail(env) {
+    const envLabels = { dev: 'DEV', preprod: 'PREPROD', prod: 'PROD' };
+    const envIcons = { dev: '💻', preprod: '🧪', prod: '🏭' };
+    const machines = state.infra.filter(i => i.env === env);
+    const statusOrder = { down: 0, degraded: 1, up: 2 };
+    const sorted = [...machines].sort((a, b) => (statusOrder[a.status] - statusOrder[b.status]) || a.name.localeCompare(b.name));
+
+    const total = sorted.length;
+    const down = sorted.filter(i => i.status === 'down').length;
+    const degraded = sorted.filter(i => i.status === 'degraded').length;
+    const up = sorted.filter(i => i.status === 'up').length;
+
+    document.getElementById('envDetailTitle').textContent = `${envIcons[env] || ''} Environnement ${envLabels[env] || env.toUpperCase()}`;
+
+    let html = `<div class="env-detail-summary">`;
+    html += `<span class="env-detail-stat env-detail-up"><span class="env-detail-stat-dot green"></span>${up} up</span>`;
+    if (degraded > 0) html += `<span class="env-detail-stat env-detail-degraded"><span class="env-detail-stat-dot yellow"></span>${degraded} degraded</span>`;
+    if (down > 0) html += `<span class="env-detail-stat env-detail-down"><span class="env-detail-stat-dot red"></span>${down} down</span>`;
+    html += `<span class="env-detail-stat env-detail-total">${total} machine${total > 1 ? 's' : ''}</span>`;
+    html += `</div>`;
+
+    // Machines
+    if (sorted.length === 0) {
+        html += '<div class="empty-state" style="padding:16px;font-size:0.82rem">Aucune machine dans cet environnement.</div>';
+    } else {
+        html += '<div class="env-detail-section-title">Machines</div>';
+        html += '<div class="env-detail-list">';
+        html += sorted.map(m => {
+            const statusCss = m.status === 'down' ? 'red' : m.status === 'degraded' ? 'yellow' : 'green';
+            const statusLabel = m.status === 'down' ? 'DOWN' : m.status === 'degraded' ? 'DÉGRADÉ' : 'UP';
+            return `<div class="env-detail-row env-detail-row-${statusCss}">
+                <span class="env-detail-row-status"><span class="env-detail-stat-dot ${statusCss}"></span>${statusLabel}</span>
+                <span class="env-detail-row-name">${esc(m.name)}</span>
+                <span class="env-detail-row-type">${(m.type || '').toUpperCase()}</span>
+                ${m.ip ? `<span class="env-detail-row-ip">${esc(m.ip)}</span>` : ''}
+                <span class="env-detail-row-details">${m.details ? esc(m.details) : ''}</span>
+            </div>`;
+        }).join('');
+        html += '</div>';
+    }
+
+    // Endpoints API rattaches a cet env
+    const endpoints = _getEndpointsByEnv(env);
+    if (endpoints.length > 0) {
+        html += '<div class="env-detail-section-title">Endpoints API</div>';
+        html += '<div class="env-detail-list">';
+        html += endpoints.map(ep => {
+            const t = (typeof API_TYPES !== 'undefined' && API_TYPES[ep.type]) || { icon: '🔌', label: ep.type, color: '#6366f1' };
+            return `<div class="env-detail-row env-detail-row-green">
+                <span class="env-detail-row-status"><span class="api-ep-type" style="background:${t.color};width:32px;height:auto;padding:2px;font-size:0.72rem">${t.icon}</span></span>
+                <span class="env-detail-row-name">${esc(ep.name)}</span>
+                <span class="env-detail-row-type">${t.label.toUpperCase()}</span>
+                <span class="env-detail-row-ip"></span>
+                <span class="env-detail-row-details">${esc(ep.url)}</span>
+            </div>`;
+        }).join('');
+        html += '</div>';
+    }
+
+    document.getElementById('envDetailContent').innerHTML = html;
+    openModal('modalEnvDetail');
+}
+
+function _getEndpointsByEnv(env) {
+    const result = [];
+    const lists = [
+        ['gitlab', 'gitlabRepos'], ['github', 'githubRepos'],
+        ['consul', 'consulEndpoints'], ['ansible', 'ansibleEndpoints'],
+        ['openstack', 'openstackEndpoints'], ['prometheus', 'prometheusEndpoints'],
+        ['grafana', 'grafanaEndpoints'], ['loki', 'lokiEndpoints'],
+        ['vault', 'vaultEndpoints'], ['tempo', 'tempoEndpoints']
+    ];
+    for (const [type, key] of lists) {
+        (state[key] || []).forEach(ep => {
+            if (ep.env === env) result.push({ ...ep, type });
+        });
+    }
+    return result;
 }

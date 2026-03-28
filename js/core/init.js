@@ -28,6 +28,10 @@ function initApp() {
     switchView(savedView, viewBtn);
 
     updateViewTabsPosition();
+    window.addEventListener('resize', () => requestAnimationFrame(updateViewTabsPosition));
+
+    // Quick-nav + scroll-to-top
+    initQuickNav();
 
     setTimeout(() => {
         document.getElementById('loader').classList.add('hidden');
@@ -68,6 +72,8 @@ function renderAll() {
     updateOpenstackCharts();
     updateDowntimeCostChart();
     updateRateLimitChart();
+    updateSectionDividers();
+    updateApiBadge();
 }
 
 if (document.readyState === 'loading') {

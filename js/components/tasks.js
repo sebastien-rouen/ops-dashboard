@@ -255,7 +255,7 @@ function renderTaskCard(t) {
 }
 
 function renderTasksEmpty() {
-    return '<div class="empty-state" style="padding:16px;font-size:0.8rem">Aucune tâche</div>';
+    return '<div class="empty-state"><span class="empty-state-icon">📋</span>Aucune tache<span class="empty-state-hint">Creez des taches avec + Tache</span></div>';
 }
 
 function renderTasks() {

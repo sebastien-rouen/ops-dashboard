@@ -1198,7 +1198,27 @@ const API_TYPES = {
     tempo:      { icon: '🔍', label: 'Tempo',      color: '#f55353' }
 };
 
+function getApiEndpointCount() {
+    return (state.gitlabRepos || []).length
+        + (state.githubRepos || []).length
+        + (state.consulEndpoints || []).length
+        + (state.ansibleEndpoints || []).length
+        + (state.openstackEndpoints || []).length
+        + (state.prometheusEndpoints || []).length
+        + (state.lokiEndpoints || []).length
+        + (state.tempoEndpoints || []).length;
+}
+
+function updateApiBadge() {
+    const badge = document.getElementById('apiBadge');
+    if (!badge) return;
+    const count = getApiEndpointCount();
+    badge.textContent = count;
+    badge.classList.toggle('has-count', count > 0);
+}
+
 function openApiConfig() {
+    cancelEditEndpoint();
     renderApiEndpointList();
     onApiTypeChange();
     openModal('modalApiConfig');
@@ -1209,32 +1229,34 @@ function onApiTypeChange() {
     const extra = document.getElementById('apiFieldsExtra');
     const projId = document.getElementById('apiProjectId');
     const branch = document.getElementById('apiBranch');
+    const projField = projId.closest('.api-form-field');
+    const branchField = branch.closest('.api-form-field');
     if (type === 'gitlab') {
-        extra.style.display = 'flex';
-        projId.style.display = '';
-        branch.style.display = '';
+        extra.style.display = '';
+        projField.style.display = '';
+        branchField.style.display = '';
         projId.placeholder = 'Project ID (ex: 12345)';
         branch.placeholder = 'Branche (défaut: main)';
     } else if (type === 'github') {
-        extra.style.display = 'flex';
-        projId.style.display = '';
-        branch.style.display = '';
+        extra.style.display = '';
+        projField.style.display = '';
+        branchField.style.display = '';
         projId.placeholder = 'owner/repo (ex: org/myrepo)';
         branch.placeholder = 'Branche (défaut: main)';
     } else if (type === 'openstack') {
-        extra.style.display = 'flex';
-        projId.style.display = '';
-        branch.style.display = 'none';
+        extra.style.display = '';
+        projField.style.display = '';
+        branchField.style.display = 'none';
         projId.placeholder = 'Projet / Tenant';
     } else if (type === 'grafana') {
-        extra.style.display = 'flex';
-        projId.style.display = '';
-        branch.style.display = 'none';
+        extra.style.display = '';
+        projField.style.display = '';
+        branchField.style.display = 'none';
         projId.placeholder = 'Org ID (optionnel)';
     } else if (type === 'vault') {
-        extra.style.display = 'flex';
-        projId.style.display = '';
-        branch.style.display = 'none';
+        extra.style.display = '';
+        projField.style.display = '';
+        branchField.style.display = 'none';
         projId.placeholder = 'Namespace (optionnel)';
     } else if (type === 'tempo') {
         extra.style.display = 'none';
@@ -1251,52 +1273,52 @@ function renderApiEndpointList() {
     (state.gitlabRepos || []).forEach(ep => {
         const c = (state.gitlabMRCache || {})[ep.id];
         const info = c && !c.error ? `${c.count} MR` : c?.error ? 'erreur' : '…';
-        all.push({ type: 'gitlab', id: ep.id, name: ep.name, url: ep.url, detail: `${ep.projectId} · ${ep.branch || 'main'}`, info, fetchedAt: c?.fetchedAt });
+        all.push({ type: 'gitlab', id: ep.id, name: ep.name, url: ep.url, env: ep.env, detail: `${ep.projectId} · ${ep.branch || 'main'}`, info, fetchedAt: c?.fetchedAt });
     });
     (state.githubRepos || []).forEach(ep => {
         const c = (state.githubPRCache || {})[ep.id];
         const info = c && !c.error ? `${c.count} PR` : c?.error ? 'erreur' : '…';
-        all.push({ type: 'github', id: ep.id, name: ep.name, url: ep.url || 'github.com', detail: `${ep.owner}/${ep.repo} · ${ep.branch || 'main'}`, info, fetchedAt: c?.fetchedAt });
+        all.push({ type: 'github', id: ep.id, name: ep.name, url: ep.url || 'github.com', env: ep.env, detail: `${ep.owner}/${ep.repo} · ${ep.branch || 'main'}`, info, fetchedAt: c?.fetchedAt });
     });
     (state.consulEndpoints || []).forEach(ep => {
         const c = (state.consulCache || {})[ep.id];
         const info = c && !c.error ? `${c.servicesHealthy}/${c.servicesTotal} svc` : c?.error ? 'erreur' : '…';
-        all.push({ type: 'consul', id: ep.id, name: ep.name, url: ep.url, detail: '', info, fetchedAt: c?.fetchedAt });
+        all.push({ type: 'consul', id: ep.id, name: ep.name, url: ep.url, env: ep.env, detail: '', info, fetchedAt: c?.fetchedAt });
     });
     (state.ansibleEndpoints || []).forEach(ep => {
         const c = (state.ansibleCache || {})[ep.id];
         const info = c && !c.error ? `${c.totalJobs} jobs` : c?.error ? 'erreur' : '…';
-        all.push({ type: 'ansible', id: ep.id, name: ep.name, url: ep.url, detail: '', info, fetchedAt: c?.fetchedAt });
+        all.push({ type: 'ansible', id: ep.id, name: ep.name, url: ep.url, env: ep.env, detail: '', info, fetchedAt: c?.fetchedAt });
     });
     (state.openstackEndpoints || []).forEach(ep => {
         const c = (state.openstackCache || {})[ep.id];
         const info = c && !c.error ? `${c.instances} inst. / ${c.volumes} vol.` : c?.error ? 'erreur' : '…';
-        all.push({ type: 'openstack', id: ep.id, name: ep.name, url: ep.url, detail: ep.project || '', info, fetchedAt: c?.fetchedAt });
+        all.push({ type: 'openstack', id: ep.id, name: ep.name, url: ep.url, env: ep.env, detail: ep.project || '', info, fetchedAt: c?.fetchedAt });
     });
     (state.prometheusEndpoints || []).forEach(ep => {
         const c = (state.prometheusCache || {})[ep.id];
         const info = c ? (c.ok ? '✓ ' + c.status : '✗ ' + (c.status || 'err')) : '…';
-        all.push({ type: 'prometheus', id: ep.id, name: ep.name, url: ep.url, detail: '', info, fetchedAt: c?.testedAt, testResult: c });
+        all.push({ type: 'prometheus', id: ep.id, name: ep.name, url: ep.url, env: ep.env, detail: '', info, fetchedAt: c?.testedAt, testResult: c });
     });
     (state.grafanaEndpoints || []).forEach(ep => {
         const c = (state.grafanaCache || {})[ep.id];
         const info = c ? (c.ok ? '✓ ' + c.status : '✗ ' + (c.status || 'err')) : '…';
-        all.push({ type: 'grafana', id: ep.id, name: ep.name, url: ep.url, detail: ep.orgId || '', info, fetchedAt: c?.testedAt, testResult: c });
+        all.push({ type: 'grafana', id: ep.id, name: ep.name, url: ep.url, env: ep.env, detail: ep.orgId || '', info, fetchedAt: c?.testedAt, testResult: c });
     });
     (state.lokiEndpoints || []).forEach(ep => {
         const c = (state.lokiCache || {})[ep.id];
         const info = c ? (c.ok ? '✓ ' + c.status : '✗ ' + (c.status || 'err')) : '…';
-        all.push({ type: 'loki', id: ep.id, name: ep.name, url: ep.url, detail: '', info, fetchedAt: c?.testedAt, testResult: c });
+        all.push({ type: 'loki', id: ep.id, name: ep.name, url: ep.url, env: ep.env, detail: '', info, fetchedAt: c?.testedAt, testResult: c });
     });
     (state.vaultEndpoints || []).forEach(ep => {
         const c = (state.vaultCache || {})[ep.id];
         const info = c ? (c.ok ? '✓ ' + c.status : '✗ ' + (c.status || 'err')) : '…';
-        all.push({ type: 'vault', id: ep.id, name: ep.name, url: ep.url, detail: ep.namespace || '', info, fetchedAt: c?.testedAt, testResult: c });
+        all.push({ type: 'vault', id: ep.id, name: ep.name, url: ep.url, env: ep.env, detail: ep.namespace || '', info, fetchedAt: c?.testedAt, testResult: c });
     });
     (state.tempoEndpoints || []).forEach(ep => {
         const c = (state.tempoCache || {})[ep.id];
         const info = c ? (c.ok ? '✓ ' + c.status : '✗ ' + (c.status || 'err')) : '…';
-        all.push({ type: 'tempo', id: ep.id, name: ep.name, url: ep.url, detail: '', info, fetchedAt: c?.testedAt, testResult: c });
+        all.push({ type: 'tempo', id: ep.id, name: ep.name, url: ep.url, env: ep.env, detail: '', info, fetchedAt: c?.testedAt, testResult: c });
     });
 
     if (all.length === 0) {
@@ -1308,9 +1330,11 @@ function renderApiEndpointList() {
         const t = API_TYPES[ep.type];
         const sync = ep.fetchedAt ? `<span class="api-ep-sync" title="${new Date(ep.fetchedAt).toLocaleString('fr-FR')}">⟳ ${timeAgoShort(ep.fetchedAt)}</span>` : '';
         const infoClass = ep.info === 'erreur' || (ep.testResult && !ep.testResult.ok) ? ' style="color:var(--red)"' : (ep.testResult?.ok ? ' style="color:var(--green)"' : '');
-        return `<div class="api-ep-item">
+        const envBadge = ep.env ? `<span class="api-ep-env env-${ep.env}">${ep.env.toUpperCase()}</span>` : '';
+        return `<div class="api-ep-item" data-ep-id="${ep.id}" data-ep-type="${ep.type}">
             <span class="api-ep-type" style="background:${t.color}">${t.icon}<span class="api-ep-type-label">${t.label}</span></span>
-            <div class="api-ep-info">
+            ${envBadge}
+            <div class="api-ep-info api-ep-editable" onclick="editApiEndpoint('${ep.type}','${ep.id}')" title="Cliquer pour modifier">
                 <span class="api-ep-name">${esc(ep.name)}</span>
                 <span class="api-ep-url">${esc(ep.url)}${ep.detail ? ' · ' + esc(ep.detail) : ''}</span>
             </div>
@@ -1323,12 +1347,106 @@ function renderApiEndpointList() {
     }).join('');
 }
 
+// --- Edit mode state ---
+let _apiEditType = null;
+let _apiEditId = null;
+
+function editApiEndpoint(type, id) {
+    const ep = _findEndpoint(type, id);
+    if (!ep) return;
+    _apiEditType = type;
+    _apiEditId = id;
+
+    // Remplir le formulaire
+    document.getElementById('apiType').value = type;
+    onApiTypeChange();
+    document.getElementById('apiEnv').value = ep.env || '';
+    document.getElementById('apiName').value = ep.name || '';
+    document.getElementById('apiUrl').value = ep.url || '';
+    document.getElementById('apiToken').value = ep.token || '';
+
+    const projId = document.getElementById('apiProjectId');
+    const branch = document.getElementById('apiBranch');
+    if (type === 'gitlab') {
+        projId.value = ep.projectId || '';
+        branch.value = ep.branch || '';
+    } else if (type === 'github') {
+        projId.value = (ep.owner && ep.repo) ? `${ep.owner}/${ep.repo}` : '';
+        branch.value = ep.branch || '';
+    } else if (type === 'openstack') {
+        projId.value = ep.project || '';
+    } else if (type === 'grafana') {
+        projId.value = ep.orgId || '';
+    } else if (type === 'vault') {
+        projId.value = ep.namespace || '';
+    }
+
+    // Mode visuel edition
+    document.getElementById('apiFormTitle').textContent = 'Modifier l\'endpoint';
+    document.getElementById('apiFormSubmit').textContent = '✓ Enregistrer';
+    document.getElementById('apiFormCancel').style.display = '';
+    document.querySelector('.api-form').classList.add('api-form-editing');
+
+    // Highlight l'item dans la liste
+    document.querySelectorAll('.api-ep-item').forEach(el => el.classList.remove('api-ep-editing'));
+    const items = document.querySelectorAll('.api-ep-item');
+    items.forEach(el => {
+        if (el.dataset.epId === id) el.classList.add('api-ep-editing');
+    });
+
+    // Scroll vers le formulaire
+    document.querySelector('.api-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function cancelEditEndpoint() {
+    _apiEditType = null;
+    _apiEditId = null;
+    document.getElementById('apiEnv').value = '';
+    document.getElementById('apiName').value = '';
+    document.getElementById('apiUrl').value = '';
+    document.getElementById('apiToken').value = '';
+    document.getElementById('apiProjectId').value = '';
+    document.getElementById('apiBranch').value = '';
+    document.getElementById('apiFormTitle').textContent = 'Nouvel endpoint';
+    document.getElementById('apiFormSubmit').textContent = '+ Ajouter l\'endpoint';
+    document.getElementById('apiFormCancel').style.display = 'none';
+    document.querySelector('.api-form').classList.remove('api-form-editing');
+    document.querySelectorAll('.api-ep-item').forEach(el => el.classList.remove('api-ep-editing'));
+}
+
+function _findEndpoint(type, id) {
+    const lists = {
+        gitlab: 'gitlabRepos', github: 'githubRepos',
+        consul: 'consulEndpoints', ansible: 'ansibleEndpoints',
+        openstack: 'openstackEndpoints', prometheus: 'prometheusEndpoints',
+        grafana: 'grafanaEndpoints', loki: 'lokiEndpoints',
+        vault: 'vaultEndpoints', tempo: 'tempoEndpoints'
+    };
+    const key = lists[type];
+    if (!key || !state[key]) return null;
+    return state[key].find(e => e.id === id);
+}
+
+function _updateEndpoint(type, id, data) {
+    const ep = _findEndpoint(type, id);
+    if (!ep) return;
+    Object.assign(ep, data);
+    saveState();
+}
+
 function addApiEndpoint() {
     const type = document.getElementById('apiType').value;
     const name = document.getElementById('apiName').value.trim();
     const url = document.getElementById('apiUrl').value.trim();
     const token = document.getElementById('apiToken').value.trim();
+    const env = document.getElementById('apiEnv').value;
     if (!name || !url) return toast('⚠️ Nom et URL requis');
+
+    // Mode edition : mise a jour
+    if (_apiEditId && _apiEditType) {
+        _applyEndpointUpdate(type, name, url, token, env);
+        return;
+    }
 
     if (type === 'gitlab') {
         const projectId = document.getElementById('apiProjectId').value.trim();
@@ -1336,7 +1454,7 @@ function addApiEndpoint() {
         const branch = document.getElementById('apiBranch').value.trim() || 'main';
         if (!state.gitlabRepos) state.gitlabRepos = [];
         const id = uid();
-        state.gitlabRepos.push({ id, name, url, projectId, branch, token });
+        state.gitlabRepos.push({ id, name, url, projectId, branch, token, env });
         saveState(); renderApiEndpointList(); renderGitlabMetric();
         fetchGitlabMRs(id);
     } else if (type === 'github') {
@@ -1347,73 +1465,123 @@ function addApiEndpoint() {
         const ghUrl = url || 'https://api.github.com';
         if (!state.githubRepos) state.githubRepos = [];
         const id = uid();
-        state.githubRepos.push({ id, name, url: ghUrl, owner, repo, branch, token });
+        state.githubRepos.push({ id, name, url: ghUrl, owner, repo, branch, token, env });
         saveState(); renderApiEndpointList(); renderGithubPRMetric();
         fetchGithubPRs(id);
     } else if (type === 'consul') {
         if (!state.consulEndpoints) state.consulEndpoints = [];
         const id = uid();
-        state.consulEndpoints.push({ id, name, url, token });
+        state.consulEndpoints.push({ id, name, url, token, env });
         saveState(); renderApiEndpointList(); renderConsulMetric();
         fetchConsul(id);
     } else if (type === 'ansible') {
         if (!state.ansibleEndpoints) state.ansibleEndpoints = [];
         const id = uid();
-        state.ansibleEndpoints.push({ id, name, url, token });
+        state.ansibleEndpoints.push({ id, name, url, token, env });
         saveState(); renderApiEndpointList(); renderAnsibleMetric();
         fetchAnsible(id);
     } else if (type === 'openstack') {
         const project = document.getElementById('apiProjectId').value.trim();
         if (!state.openstackEndpoints) state.openstackEndpoints = [];
         const id = uid();
-        state.openstackEndpoints.push({ id, name, url, project, token });
+        state.openstackEndpoints.push({ id, name, url, project, token, env });
         saveState(); renderApiEndpointList(); renderOpenstackMetric();
         fetchOpenstack(id);
     } else if (type === 'prometheus') {
         if (!state.prometheusEndpoints) state.prometheusEndpoints = [];
         const id = uid();
-        state.prometheusEndpoints.push({ id, name, url, token });
+        state.prometheusEndpoints.push({ id, name, url, token, env });
         saveState(); renderApiEndpointList();
         testApiEndpoint('prometheus', id);
     } else if (type === 'grafana') {
         const orgId = document.getElementById('apiProjectId').value.trim();
         if (!state.grafanaEndpoints) state.grafanaEndpoints = [];
         const id = uid();
-        state.grafanaEndpoints.push({ id, name, url, orgId, token });
+        state.grafanaEndpoints.push({ id, name, url, orgId, token, env });
         saveState(); renderApiEndpointList();
         testApiEndpoint('grafana', id);
     } else if (type === 'loki') {
         if (!state.lokiEndpoints) state.lokiEndpoints = [];
         const id = uid();
-        state.lokiEndpoints.push({ id, name, url, token });
+        state.lokiEndpoints.push({ id, name, url, token, env });
         saveState(); renderApiEndpointList();
         testApiEndpoint('loki', id);
     } else if (type === 'vault') {
         const namespace = document.getElementById('apiProjectId').value.trim();
         if (!state.vaultEndpoints) state.vaultEndpoints = [];
         const id = uid();
-        state.vaultEndpoints.push({ id, name, url, namespace, token });
+        state.vaultEndpoints.push({ id, name, url, namespace, token, env });
         saveState(); renderApiEndpointList();
         testApiEndpoint('vault', id);
     } else if (type === 'tempo') {
         if (!state.tempoEndpoints) state.tempoEndpoints = [];
         const id = uid();
-        state.tempoEndpoints.push({ id, name, url, token });
+        state.tempoEndpoints.push({ id, name, url, token, env });
         saveState(); renderApiEndpointList();
         testApiEndpoint('tempo', id);
     }
 
     // Clear form
+    document.getElementById('apiEnv').value = '';
     document.getElementById('apiName').value = '';
     document.getElementById('apiUrl').value = '';
     document.getElementById('apiToken').value = '';
     document.getElementById('apiProjectId').value = '';
     document.getElementById('apiBranch').value = '';
     updateMetricGroupVisibility();
+    updateApiBadge();
     toast('✅ Endpoint ' + name + ' ajouté');
 }
 
+function _applyEndpointUpdate(type, name, url, token, env) {
+    const id = _apiEditId;
+    const origType = _apiEditType;
+
+    // Si le type a change, on supprime de l'ancien et on cree dans le nouveau
+    if (type !== origType) {
+        removeApiEndpoint(origType, id);
+        cancelEditEndpoint();
+        // Re-remplir le form pour simuler un ajout
+        document.getElementById('apiType').value = type;
+        onApiTypeChange();
+        document.getElementById('apiEnv').value = env || '';
+        document.getElementById('apiName').value = name;
+        document.getElementById('apiUrl').value = url;
+        document.getElementById('apiToken').value = token;
+        addApiEndpoint();
+        return;
+    }
+
+    const data = { name, url, token, env: env || '' };
+    if (type === 'gitlab') {
+        const projectId = document.getElementById('apiProjectId').value.trim();
+        if (!projectId) return toast('⚠️ Project ID requis pour GitLab');
+        data.projectId = projectId;
+        data.branch = document.getElementById('apiBranch').value.trim() || 'main';
+    } else if (type === 'github') {
+        const ownerRepo = document.getElementById('apiProjectId').value.trim();
+        if (!ownerRepo || !ownerRepo.includes('/')) return toast('⚠️ Format owner/repo requis (ex: org/myrepo)');
+        const [owner, repo] = ownerRepo.split('/');
+        data.owner = owner;
+        data.repo = repo;
+        data.branch = document.getElementById('apiBranch').value.trim() || 'main';
+    } else if (type === 'openstack') {
+        data.project = document.getElementById('apiProjectId').value.trim();
+    } else if (type === 'grafana') {
+        data.orgId = document.getElementById('apiProjectId').value.trim();
+    } else if (type === 'vault') {
+        data.namespace = document.getElementById('apiProjectId').value.trim();
+    }
+
+    _updateEndpoint(type, id, data);
+    cancelEditEndpoint();
+    renderApiEndpointList();
+    updateApiBadge();
+    toast('✅ Endpoint ' + name + ' modifié');
+}
+
 function removeApiEndpoint(type, id) {
+    if (_apiEditId === id) cancelEditEndpoint();
     if (type === 'gitlab') {
         state.gitlabRepos = (state.gitlabRepos || []).filter(e => e.id !== id);
         if (state.gitlabMRCache) delete state.gitlabMRCache[id];
@@ -1462,6 +1630,7 @@ function removeApiEndpoint(type, id) {
         saveState(); renderApiEndpointList();
     }
     updateMetricGroupVisibility();
+    updateApiBadge();
 }
 
 function refreshApiEndpoint(type, id) {

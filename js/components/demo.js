@@ -38,10 +38,12 @@ function resetBoard() {
     state.rateLimitEvents = [];
     state.chartData = null;
     state.bannerDismissed = false;
+    state.dashboardSettings = {};
     if (state.trafficLight) state.trafficLight.history = [];
     addLog('🗑️', 'Board remis à zéro');
     saveState();
     renderAll();
+    applyDashboardSettings();
     toast('🗑️ Board remis à zéro');
 }
 
@@ -65,6 +67,7 @@ function loadDemoIncident() {
     state.githubPRCache = {};
     state.githubActionsCache = {};
     state.githubCommitsCache = {};
+    state.dashboardSettings = {};
     if (state.trafficLight) state.trafficLight.history = [];
 
     // ---- Démo 1 : Infrastructure variée (30 machines) ----
@@ -757,6 +760,7 @@ function loadDemoIncident() {
     addLog('🧪', 'Scénario INCIDENT chargé (30 machines, 20 tâches, 12 impacts, 4 repos GitLab, 3 repos GitHub, Consul, Ansible, OpenStack, Rate Limiting, Prometheus, Loki, Tempo)');
     saveState();
     renderAll();
+    applyDashboardSettings();
     toast('🔴 Scénario incident chargé');
 }
 
@@ -779,6 +783,7 @@ function loadDemoGreen() {
     state.githubPRCache = {};
     state.githubActionsCache = {};
     state.githubCommitsCache = {};
+    state.dashboardSettings = {};
     if (state.trafficLight) state.trafficLight.history = [];
 
     // ---- Infra : tout UP ----
@@ -1125,6 +1130,7 @@ function loadDemoGreen() {
     addLog('🧪', 'Scénario NOMINAL chargé (20 machines, 14 tâches, 0 impact actif, 2 repos GitLab, 2 repos GitHub, Consul, Ansible, OpenStack, Rate Limiting, Prometheus, Loki, Tempo)');
     saveState();
     renderAll();
+    applyDashboardSettings();
     toast('🟢 Scénario nominal chargé — tout est vert !');
 }
 

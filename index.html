@@ -35,7 +35,8 @@
         </div>
         <div class="header-right">
             <div class="header-actions-group">
-                <button class="btn btn-icon" onclick="openApiConfig()" title="Endpoints API">🔌</button>
+                <button class="btn btn-icon btn-api-config" onclick="openApiConfig()" title="Endpoints API">🔌<span class="api-badge" id="apiBadge"></span></button>
+                <button class="btn btn-icon btn-wizard" onclick="openWizard()" title="Assistant de configuration">🧙</button>
                 <button class="btn btn-icon" onclick="openDashboardSettings()" title="Paramètres d'affichage (s)">⚙️</button>
                 <button class="btn btn-icon" onclick="toggleCompactMode()" title="Mode compact (c)">📐</button>
                 <button class="btn btn-icon" onclick="toggleTheme()" title="Thème">🌓</button>
@@ -127,10 +128,11 @@
 <main>
 
     <!-- METRICS -->
-    <section class="metrics-bar" data-views="ops reseau apps">
+    <section id="sectionMetrics" class="metrics-bar" data-views="ops reseau apps">
         <!-- Groupe : Activite -->
         <div class="metrics-group">
             <div class="metrics-group-label">Activit&eacute;</div>
+            <div class="metrics-group-cards">
             <div class="metric-card metric-card-todo metric-clickable" onclick="openMetricDetail('todo')" title="Voir les tâches à faire" data-settings-id="metric-todo">
                 <div class="metric-icon">📌</div>
                 <div class="metric-content">
@@ -166,11 +168,13 @@
                 </div>
                 <div class="metric-glow"></div>
             </div>
+            </div>
         </div>
 
         <!-- Groupe : Disponibilite -->
         <div class="metrics-group">
             <div class="metrics-group-label">Disponibilit&eacute;</div>
+            <div class="metrics-group-cards">
             <div class="metric-card metric-card-infra metric-clickable" onclick="openMetricDetail('infra')" title="Voir le détail infrastructure" data-settings-id="metric-infra">
                 <div class="metric-icon">🖥️</div>
                 <div class="metric-content">
@@ -208,11 +212,13 @@
                 </div>
                 <div class="metric-glow"></div>
             </div>
+            </div>
         </div>
 
         <!-- Groupe : CI/CD -->
         <div class="metrics-group">
             <div class="metrics-group-label">CI / CD</div>
+            <div class="metrics-group-cards">
             <div class="metric-card metric-card-gitlab metric-clickable" onclick="openGitlabDetail()" title="Merge Requests ouvertes sur master" data-settings-id="metric-gitlab">
                 <div class="metric-icon">🦊</div>
                 <div class="metric-content">
@@ -263,11 +269,13 @@
                 </div>
                 <div class="metric-glow"></div>
             </div>
+            </div>
         </div>
 
         <!-- Groupe : Monitoring -->
         <div class="metrics-group">
             <div class="metrics-group-label">Monitoring</div>
+            <div class="metrics-group-cards">
             <div class="metric-card metric-card-sre metric-clickable" onclick="openMTTRDetail()" title="Temps moyen de rétablissement (impacts résolus)" data-settings-id="metric-mttr" data-views="ops reseau apps">
                 <div class="metric-icon">⏱️</div>
                 <div class="metric-content">
@@ -355,11 +363,13 @@
                 </div>
                 <div class="metric-glow"></div>
             </div>
+            </div>
         </div>
     </section>
 
     <!-- CHARTS -->
-    <section class="charts-grid" id="chartsGrid" data-views="ops reseau apps">
+    <div class="section-divider" data-views="ops reseau apps"><span class="section-divider-label">Graphiques</span></div>
+    <section id="chartsGrid" class="charts-grid" data-views="ops reseau apps">
         <button class="charts-layout-toggle" id="chartsLayoutToggle" onclick="toggleChartsLayout()" title="Changer la disposition"></button>
         <div class="chart-container" data-views="ops apps" data-settings-id="chart-activity">
             <h3>📈 Activité Kanban (7 jours)</h3>
@@ -476,7 +486,8 @@
     </section>
 
     <!-- INFRA -->
-    <section class="section-infra" data-views="ops reseau" data-settings-id="section-infra">
+    <div class="section-divider" data-views="ops reseau"><span class="section-divider-label">Infrastructure</span></div>
+    <section id="sectionInfra" class="section-infra" data-views="ops reseau" data-settings-id="section-infra">
         <div class="section-header">
             <h2>🖥️ Infrastructure</h2>
             <div class="header-actions">
@@ -487,11 +498,12 @@
             </div>
         </div>
         <div id="infraGrid" class="infra-grid"></div>
-        <div id="noInfra" class="empty-state">Aucun élément d'infrastructure enregistré</div>
+        <div id="noInfra" class="empty-state"><span class="empty-state-icon">🖥️</span>Aucun element d'infrastructure<span class="empty-state-hint">+ Ajouter ou 📋 Coller en masse</span></div>
     </section>
 
     <!-- KANBAN -->
-    <section class="section-kanban" data-views="ops apps" data-settings-id="section-kanban">
+    <div class="section-divider" data-views="ops apps"><span class="section-divider-label">Kanban</span></div>
+    <section id="sectionKanban" class="section-kanban" data-views="ops apps" data-settings-id="section-kanban">
         <div class="section-header">
             <h2>📋 Kanban OPS</h2>
             <div class="header-actions">
@@ -504,17 +516,19 @@
     </section>
 
     <!-- IMPACT HISTORY -->
-    <section class="section-history" data-views="ops reseau" data-settings-id="section-history">
+    <div class="section-divider" data-views="ops reseau"><span class="section-divider-label">Historique</span></div>
+    <section id="sectionHistory" class="section-history" data-views="ops reseau" data-settings-id="section-history">
         <div class="section-header">
             <h2>📜 Historique impacts</h2>
             <button class="btn btn-small btn-secondary" onclick="clearResolvedImpacts()">🗑 Purger</button>
         </div>
         <div id="historyList" class="history-list"></div>
-        <div id="noHistory" class="empty-state">Aucun impact résolu</div>
+        <div id="noHistory" class="empty-state"><span class="empty-state-icon">📜</span>Aucun impact resolu<span class="empty-state-hint">Les impacts resolus apparaitront ici avec leur duree</span></div>
     </section>
 
     <!-- LOG -->
-    <section class="section-log" data-views="ops" data-settings-id="section-log">
+    <div class="section-divider" data-views="ops"><span class="section-divider-label">Journal</span></div>
+    <section id="sectionLog" class="section-log" data-views="ops" data-settings-id="section-log">
         <div class="section-header">
             <h2>📝 Journal d'événements</h2>
             <button class="btn btn-small btn-secondary" onclick="clearLog()">🗑 Vider</button>
@@ -912,11 +926,13 @@ elk-stack | stack | degraded | 10.0.2.1 | ELK 8.x | dev"></textarea>
         </div>
         <div class="modal-body">
             <label>Format source</label>
-            <select id="importSourceFormat">
+            <select id="importSourceFormat" onchange="onImportFormatChange()">
                 <option value="prometheus">Prometheus (targets / up metric)</option>
                 <option value="zabbix">Zabbix (hosts API)</option>
                 <option value="json">JSON générique</option>
             </select>
+
+            <div id="importFormatExample" class="import-format-example"></div>
 
             <label>URL de l'API (optionnel)</label>
             <div class="import-url-row">
@@ -926,10 +942,7 @@ elk-stack | stack | degraded | 10.0.2.1 | ELK 8.x | dev"></textarea>
             <p class="hint">⚠️ L'URL doit être accessible depuis votre navigateur (CORS). Sinon, collez les données JSON ci-dessous.</p>
 
             <label>Données JSON</label>
-            <textarea id="importSourceJson" rows="8" placeholder='Collez ici le JSON de votre source de monitoring...
-Prometheus: résultat de /api/v1/targets ou /api/v1/query?query=up
-Zabbix: résultat de host.get
-JSON: tableau [{name, type, status, ip}]'></textarea>
+            <textarea id="importSourceJson" rows="8" placeholder='Collez ici le JSON de votre source de monitoring...'></textarea>
 
             <div class="preview-actions">
                 <button class="btn btn-small btn-secondary" onclick="previewSourceImport()">👁️ Prévisualiser</button>
@@ -939,6 +952,37 @@ JSON: tableau [{name, type, status, ip}]'></textarea>
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeModal('modalImportSources')">Annuler</button>
             <button class="btn btn-primary" id="btnConfirmSourceImport" onclick="confirmSourceImport()" disabled>📡 Importer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Wizard -->
+<div class="modal-overlay" id="modalWizard">
+    <div class="modal modal-api-config">
+        <div class="modal-header">
+            <h3 id="wizardTitle">🧙 Assistant de configuration</h3>
+            <button class="btn-close" onclick="closeModal('modalWizard')">✕</button>
+        </div>
+        <div class="modal-body" id="wizardBody"></div>
+        <div class="modal-footer" id="wizardFooter">
+            <button class="btn btn-secondary" id="wizardBtnBack" onclick="wizardBack()" style="display:none">Retour</button>
+            <button class="btn btn-secondary" onclick="closeModal('modalWizard')">Fermer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Env Detail -->
+<div class="modal-overlay" id="modalEnvDetail">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="envDetailTitle">Environnement</h3>
+            <button class="btn-close" onclick="closeModal('modalEnvDetail')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="envDetailContent"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalEnvDetail')">Fermer</button>
         </div>
     </div>
 </div>
@@ -961,7 +1005,7 @@ JSON: tableau [{name, type, status, ip}]'></textarea>
 
 <!-- MODAL: API Endpoints (unified) -->
 <div class="modal-overlay" id="modalApiConfig">
-    <div class="modal modal-large">
+    <div class="modal modal-api-config">
         <div class="modal-header">
             <h3>🔌 Endpoints API</h3>
             <button class="btn-close" onclick="closeModal('modalApiConfig')">✕</button>
@@ -970,30 +1014,59 @@ JSON: tableau [{name, type, status, ip}]'></textarea>
             <p class="hint">Centralisez vos connexions API. Le token est facultatif pour les endpoints publics.</p>
             <div id="apiEndpointList" class="api-endpoint-list"></div>
             <div class="api-form">
-                <div class="api-form-row">
-                    <select id="apiType" onchange="onApiTypeChange()">
-                        <option value="gitlab">🦊 GitLab</option>
-                        <option value="github">🐙 GitHub</option>
-                        <option value="consul">🟢 Consul</option>
-                        <option value="ansible">🤖 Ansible</option>
-                        <option value="openstack">☁️ OpenStack</option>
-                        <option value="prometheus">📊 Prometheus</option>
-                        <option value="grafana">📈 Grafana</option>
-                        <option value="loki">📋 Loki</option>
-                        <option value="vault">🔐 Vault</option>
-                        <option value="tempo">🔍 Tempo</option>
-                    </select>
-                    <input type="text" id="apiName" placeholder="Nom">
-                    <input type="text" id="apiUrl" placeholder="URL">
-                </div>
-                <div class="api-form-row">
-                    <input type="password" id="apiToken" placeholder="Token (optionnel)" autocomplete="off">
-                    <div id="apiFieldsExtra" class="api-fields-extra">
-                        <input type="text" id="apiProjectId" placeholder="Project ID">
-                        <input type="text" id="apiBranch" placeholder="Branche (main)">
+                <div class="api-form-title" id="apiFormTitle">Nouvel endpoint</div>
+                <div class="api-form-grid">
+                    <div class="api-form-field">
+                        <label for="apiType">Type de service</label>
+                        <select id="apiType" onchange="onApiTypeChange()">
+                            <option value="gitlab">🦊 GitLab</option>
+                            <option value="github">🐙 GitHub</option>
+                            <option value="consul">🟢 Consul</option>
+                            <option value="ansible">🤖 Ansible</option>
+                            <option value="openstack">☁️ OpenStack</option>
+                            <option value="prometheus">📊 Prometheus</option>
+                            <option value="grafana">📈 Grafana</option>
+                            <option value="loki">📋 Loki</option>
+                            <option value="vault">🔐 Vault</option>
+                            <option value="tempo">🔍 Tempo</option>
+                        </select>
                     </div>
-                    <button class="btn btn-small btn-secondary" onclick="testApiConnection()" title="Tester la connexion">⚡ Test</button>
-                    <button class="btn btn-small btn-primary" onclick="addApiEndpoint()">+ Ajouter</button>
+                    <div class="api-form-field">
+                        <label for="apiEnv">Environnement <span class="api-form-optional">optionnel</span></label>
+                        <select id="apiEnv">
+                            <option value="">— Transverse</option>
+                            <option value="dev">DEV</option>
+                            <option value="preprod">PREPROD</option>
+                            <option value="prod">PROD</option>
+                        </select>
+                    </div>
+                    <div class="api-form-field api-form-field-full">
+                        <label for="apiName">Nom</label>
+                        <input type="text" id="apiName" placeholder="Ex : Mon projet GitLab">
+                    </div>
+                    <div class="api-form-field api-form-field-full">
+                        <label for="apiUrl">URL de l'API</label>
+                        <input type="text" id="apiUrl" placeholder="https://gitlab.example.com">
+                    </div>
+                    <div class="api-form-field api-form-field-full">
+                        <label for="apiToken">Token d'accès <span class="api-form-optional">optionnel</span></label>
+                        <input type="password" id="apiToken" placeholder="glpat-xxxx ou ghp_xxxx" autocomplete="off">
+                    </div>
+                    <div id="apiFieldsExtra" class="api-fields-extra">
+                        <div class="api-form-field">
+                            <label for="apiProjectId">Project ID</label>
+                            <input type="text" id="apiProjectId" placeholder="12345">
+                        </div>
+                        <div class="api-form-field">
+                            <label for="apiBranch">Branche</label>
+                            <input type="text" id="apiBranch" placeholder="main">
+                        </div>
+                    </div>
+                </div>
+                <div class="api-form-actions">
+                    <button class="btn btn-secondary" onclick="testApiConnection()" title="Tester la connexion">⚡ Tester la connexion</button>
+                    <button class="btn btn-secondary api-form-cancel" id="apiFormCancel" onclick="cancelEditEndpoint()" style="display:none">Annuler</button>
+                    <button class="btn btn-primary" id="apiFormSubmit" onclick="addApiEndpoint()">+ Ajouter l'endpoint</button>
                 </div>
             </div>
         </div>
@@ -1325,6 +1398,39 @@ JSON: tableau [{name, type, status, ip}]'></textarea>
     </div>
 </aside>
 <div class="ds-sidebar-backdrop" id="dsSidebarBackdrop" onclick="closeDashboardSettings()"></div>
+
+<!-- QUICK NAV -->
+<nav class="quick-nav" id="quickNav">
+    <button class="qn-dot active" data-target="sectionMetrics" title="Metriques">
+        <span class="qn-icon">📊</span>
+        <span class="qn-label">Metriques</span>
+    </button>
+    <button class="qn-dot" data-target="chartsGrid" title="Graphiques">
+        <span class="qn-icon">📈</span>
+        <span class="qn-label">Graphiques</span>
+    </button>
+    <button class="qn-dot" data-target="sectionInfra" title="Infrastructure">
+        <span class="qn-icon">🖥️</span>
+        <span class="qn-label">Infra</span>
+    </button>
+    <button class="qn-dot" data-target="sectionKanban" title="Kanban">
+        <span class="qn-icon">📋</span>
+        <span class="qn-label">Kanban</span>
+    </button>
+    <button class="qn-dot" data-target="sectionHistory" title="Historique">
+        <span class="qn-icon">📜</span>
+        <span class="qn-label">Historique</span>
+    </button>
+    <button class="qn-dot" data-target="sectionLog" title="Journal">
+        <span class="qn-icon">📝</span>
+        <span class="qn-label">Journal</span>
+    </button>
+</nav>
+
+<!-- SCROLL TO TOP -->
+<button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Retour en haut">
+    <span>&#8593;</span>
+</button>
 
 <script src="js/main.js"></script>
 </body>

@@ -549,6 +549,18 @@
     text-overflow: ellipsis;
     max-width: 40px;
 }
+.api-ep-env {
+    font-size: 0.58rem;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+}
+.api-ep-env.env-dev { background: #3b82f620; color: var(--accent); }
+.api-ep-env.env-preprod { background: #f59e0b20; color: var(--yellow); }
+.api-ep-env.env-prod { background: #ef444420; color: var(--red); }
 .api-ep-info {
     flex: 1;
     min-width: 0;
@@ -582,35 +594,77 @@
 .api-form {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 14px;
+    gap: 16px;
+    padding: 20px;
     background: var(--bg-input);
-    border: 1px dashed var(--border);
-    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-top: 8px;
 }
-.api-form-row {
+.api-form-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+.api-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+.api-form-field {
     display: flex;
-    gap: 8px;
-    align-items: center;
+    flex-direction: column;
+    gap: 5px;
 }
-.api-form-row select,
-.api-form-row input {
-    flex: 1;
-    min-width: 0;
+.api-form-field label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.02em;
 }
-.api-form-row select {
-    max-width: 160px;
+.api-form-field-full {
+    grid-column: 1 / -1;
+}
+.api-form-optional {
+    font-weight: 400;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    margin-left: 4px;
 }
 .api-fields-extra {
-    display: flex;
-    gap: 8px;
-    flex: 2;
+    display: contents;
 }
-.api-fields-extra input { flex: 1; min-width: 0; }
+.api-form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+}
 @media (max-width: 600px) {
-    .api-form-row { flex-wrap: wrap; }
-    .api-form-row select { max-width: 100%; }
-    .api-fields-extra { flex-basis: 100%; }
+    .api-form-grid { grid-template-columns: 1fr; }
+    .api-form-actions { flex-direction: column; }
+    .api-form-actions .btn { width: 100%; }
+}
+.api-ep-editable {
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    padding: 4px 6px;
+    margin: -4px -6px;
+    transition: background 0.15s;
+}
+.api-ep-editable:hover {
+    background: rgba(99,102,241,0.08);
+}
+.api-ep-item.api-ep-editing {
+    border-color: var(--accent);
+    background: rgba(99,102,241,0.06);
+}
+.api-form-editing {
+    border-color: var(--accent);
+    border-style: solid;
 }
 .api-ep-test-btn {
     font-size: 0.72rem;

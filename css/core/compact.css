@@ -11,7 +11,7 @@
 .compact-mode .metric-value { font-size: 1.2rem; }
 .compact-mode .metric-label { font-size: 0.65rem; }
 .compact-mode .metric-card:hover { transform: none; box-shadow: none; }
-.compact-mode .metrics-group-label { font-size: 0.58rem; padding: 6px 0 1px; }
+.compact-mode .metrics-group-label { font-size: 0.46rem; padding: 0; padding-right: 8px; }
 
 .compact-mode .section-header { margin-bottom: 10px; }
 .compact-mode .section-header h2 { font-size: 0.92rem; }

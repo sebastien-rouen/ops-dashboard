@@ -29,6 +29,8 @@
         // Components (suite — dépendent d'intégrations ou sont transversaux)
         'js/components/export.js',
         'js/components/filters-views.js',
+        'js/components/navigation.js',
+        'js/components/wizard.js',
 
         // Données simulées des scénarios (chargées avant demo.js)
         'js/scenarios/nominal/prometheus.js',
